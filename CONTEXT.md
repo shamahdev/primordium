@@ -8,6 +8,14 @@ Primordium is a Valorant companion app focused on letting a player keep and swit
 One authenticated Riot identity paired with its selected Valorant Region on this device.
 _Avoid_: Account, profile, user
 
+**Ready Stored Riot Account**:
+A Stored Riot Account that can be used now or can refresh its Riot session silently from saved sign-in material.
+_Avoid_: Logged in, token-valid
+
+**Sign-in Required Stored Riot Account**:
+A Stored Riot Account that remains saved on the device but requires interactive Riot login before Riot data can be refreshed.
+_Avoid_: Logged out, expired account
+
 **Region**:
 The user-facing Valorant routing choice used by the app to call Riot/Valorant APIs for a Stored Riot Account.
 _Avoid_: Shard in user-facing copy, server
@@ -21,6 +29,8 @@ _Avoid_: Profile, account data
 - A **Stored Riot Account** has exactly one **Region**.
 - A **Stored Riot Account** can have zero or one **Profile Snapshot**.
 - A **Profile Snapshot** belongs to exactly one **Stored Riot Account**.
+- A **Stored Riot Account** is either ready or sign-in required.
+- Token expiry alone does not make a **Stored Riot Account** sign-in required if the app can silently refresh its Riot session.
 
 ## Example dialogue
 

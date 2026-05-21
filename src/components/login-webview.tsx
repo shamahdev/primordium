@@ -6,8 +6,8 @@ import { PrimaryButton } from '@/components/primary-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import type { StoredAuthTokens, StoredRiotAccount, ValorantShard } from '@/lib/account';
-import { clearRiotCookies } from '@/lib/riot-cookies';
+import type { StoredAuthTokens, StoredRiotAccount, StoredRiotCookie, ValorantShard } from '@/lib/account';
+import { captureRiotAuthCookies, clearRiotCookies } from '@/lib/riot-cookies';
 import {
   authenticateRiotLogin,
   getAccessTokenFromUri,
@@ -18,7 +18,12 @@ import {
 type LoginWebViewProps = {
   shard: ValorantShard;
   onCancel: () => void;
-  onAuthenticated: (result: { account: StoredRiotAccount; tokens: StoredAuthTokens }) => Promise<void>;
+  onAuthenticated: (result: {
+    account: StoredRiotAccount;
+    tokens: StoredAuthTokens;
+    cookies: StoredRiotCookie[];
+    cookieCaptureFailed: boolean;
+  }) => Promise<void>;
 };
 
 export function LoginWebView({ shard, onCancel, onAuthenticated }: LoginWebViewProps) {
@@ -51,7 +56,18 @@ export function LoginWebView({ shard, onCancel, onAuthenticated }: LoginWebViewP
     try {
       const accessToken = getAccessTokenFromUri(url);
       const result = await authenticateRiotLogin(accessToken, shard);
-      await onAuthenticated(result);
+      let cookies: StoredRiotCookie[] = [];
+      let cookieCaptureFailed = false;
+      try {
+        cookies = await captureRiotAuthCookies();
+      } catch {
+        cookieCaptureFailed = true;
+      }
+      try {
+        await onAuthenticated({ ...result, cookies, cookieCaptureFailed });
+      } finally {
+        await clearRiotCookies();
+      }
     } catch (loginError) {
       handledRedirectRef.current = false;
       setLoading('');
@@ -91,9 +107,8 @@ export function LoginWebView({ shard, onCancel, onAuthenticated }: LoginWebViewP
       <ThemedView type="backgroundElement" style={styles.webViewShell}>
         <WebView
           key={webViewKey}
-          incognito
           cacheEnabled={false}
-          sharedCookiesEnabled={false}
+          sharedCookiesEnabled
           thirdPartyCookiesEnabled={false}
           source={{ uri: RIOT_LOGIN_URL }}
           userAgent="Mozilla/5.0 (Linux; Android) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Mobile Safari/537.36"

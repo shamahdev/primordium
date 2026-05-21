@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,13 +9,24 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { VALORANT_SHARDS, type ValorantShard } from '@/lib/account';
+import { useAccountStore } from '@/stores/account-store';
 
 export default function OnboardingScreen() {
+  const params = useLocalSearchParams<{ shard?: string }>();
   const theme = useTheme();
-  const [selectedShard, setSelectedShard] = React.useState<ValorantShard>('eu');
+  const accounts = useAccountStore((state) => state.accounts);
+  const initialShard = VALORANT_SHARDS.some((shard) => shard.id === params.shard) ? (params.shard as ValorantShard) : 'eu';
+  const [selectedShard, setSelectedShard] = React.useState<ValorantShard>(initialShard);
 
   const startLogin = () => {
-    router.push({ pathname: '/login', params: { shard: selectedShard } } as never);
+    router.push({ pathname: '/login', params: { mode: 'add', shard: selectedShard, returnTo: '/(tabs)/profile' } } as never);
+  };
+
+  const switchAccount = () => {
+    router.push({
+      pathname: '/switch-account',
+      params: { reason: 'choose', returnTo: `/onboarding?shard=${selectedShard}` },
+    } as never);
   };
 
   return (
@@ -72,6 +83,14 @@ export default function OnboardingScreen() {
             </ThemedView>
           ) : (
             <PrimaryButton label="Login" onPress={startLogin} />
+          )}
+
+          {accounts.length > 0 && (
+            <Pressable onPress={switchAccount} style={({ pressed }) => [styles.switchAccount, pressed && styles.pressed]}>
+              <ThemedText type="small" themeColor="textSecondary">
+                Switch Account
+              </ThemedText>
+            </Pressable>
           )}
 
           <ThemedView type="backgroundElement" style={styles.card}>
@@ -132,5 +151,11 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
     padding: Spacing.three,
     gap: Spacing.one,
+  },
+  switchAccount: {
+    alignItems: 'center',
+  },
+  pressed: {
+    opacity: 0.7,
   },
 });

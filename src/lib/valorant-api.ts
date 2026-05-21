@@ -1,6 +1,9 @@
 import { jwtDecode } from 'jwt-decode';
 
+import { AuthRecoveryRequired, isAuthRecoveryRequired, requestSilentReauth } from '@/lib/auth-coordinator';
 import { getAccountId, type ProfileSnapshot, type StoredAuthTokens, type StoredRiotAccount, type ValorantShard } from '@/lib/account';
+import { deleteAuthCookies, deleteAuthMaterial, getAuthTokens } from '@/lib/secure-auth-store';
+import { useAccountStore } from '@/stores/account-store';
 
 export const RIOT_LOGIN_URL =
   'https://auth.riotgames.com/authorize?redirect_uri=https%3A%2F%2Fplayvalorant.com%2Fopt_in&client_id=play-valorant-web-prod&response_type=token%20id_token&nonce=1&scope=account%20openid';
@@ -8,6 +11,7 @@ export const RIOT_LOGIN_URL =
 const RIOT_CLIENT_PLATFORM =
   'ew0KCSJwbGF0Zm9ybVR5cGUiOiAiUEMiLA0KCSJwbGF0Zm9ybU9TIjogIldpbmRvd3MiLA0KCSJwbGF0Zm9ybU9TVmVyc2lvbiI6ICIxMC4wLjE5MDQyLjEuMjU2LjY0Yml0IiwNCgkicGxhdGZvcm1DaGlwc2V0IjogIlVua25vd24iDQp9';
 const FALLBACK_CLIENT_VERSION = '43.0.1.4195386.4190634';
+const TOKEN_REFRESH_WINDOW_MS = 5 * 60 * 1000;
 const CURRENCY_IDS = {
   vp: '85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741',
   radianite: 'e59aa87c-4cbf-517a-5983-6e81511be9b7',
@@ -95,7 +99,18 @@ export async function authenticateRiotLogin(accessToken: string, shard: Valorant
   return { account, tokens };
 }
 
-export async function fetchProfileSnapshot(account: StoredRiotAccount, tokens: StoredAuthTokens): Promise<ProfileSnapshot> {
+export async function fetchProfileSnapshot(account: StoredRiotAccount): Promise<ProfileSnapshot> {
+  return withAuthorizedTokens(account, (tokens) => fetchProfileSnapshotWithTokens(account, tokens));
+}
+
+export async function ensureAccountSession(account: StoredRiotAccount) {
+  await getValidAuthTokens(account);
+}
+
+async function fetchProfileSnapshotWithTokens(
+  account: StoredRiotAccount,
+  tokens: StoredAuthTokens,
+): Promise<ProfileSnapshot> {
   const headers = await getAuthorizedHeaders(tokens);
   const [xp, wallet] = await Promise.all([
     riotFetch<AccountXPResponse>(`https://pd.${account.shard}.a.pvp.net/account-xp/v1/players/${account.puuid}`, {
@@ -116,6 +131,94 @@ export async function fetchProfileSnapshot(account: StoredRiotAccount, tokens: S
     },
     fetchedAt: new Date().toISOString(),
   };
+}
+
+async function withAuthorizedTokens<T>(
+  account: StoredRiotAccount,
+  request: (tokens: StoredAuthTokens) => Promise<T>,
+): Promise<T> {
+  const tokens = await getValidAuthTokens(account);
+  try {
+    return await request(tokens);
+  } catch (error) {
+    if (!isAuthFailure(error)) {
+      throw error;
+    }
+  }
+
+  const refreshedTokens = await refreshAuthTokens(account, true);
+  try {
+    return await request(refreshedTokens);
+  } catch (error) {
+    if (isAuthFailure(error)) {
+      await rejectStoredAuth(account.id, 'cookieReauthFailed');
+    }
+    throw error;
+  }
+}
+
+async function getValidAuthTokens(account: StoredRiotAccount) {
+  if (account.status === 'needsReauth') {
+    throw new AuthRecoveryRequired(account.id, 'missingTokens', 'interactiveLoginRequired', 'Sign in again.');
+  }
+
+  const tokens = await getAuthTokens(account.id);
+  if (!tokens) {
+    return refreshAuthTokens(account, false);
+  }
+
+  if (shouldRefreshTokens(tokens)) {
+    return refreshAuthTokens(account, false);
+  }
+
+  return tokens;
+}
+
+async function refreshAuthTokens(account: StoredRiotAccount, force: boolean) {
+  try {
+    const result = await requestSilentReauth(account);
+    const authenticated = await authenticateRiotLogin(result.accessToken, account.shard);
+    if (authenticated.account.puuid !== account.puuid) {
+      await rejectStoredAuth(account.id, 'identityMismatch');
+    }
+    await useAccountStore.getState().saveAuthenticatedAccount(authenticated.account, authenticated.tokens, result.cookies);
+    return authenticated.tokens;
+  } catch (error) {
+    if (isAuthRecoveryRequired(error)) {
+      if (error.recoveryKind === 'interactiveLoginRequired') {
+        if (error.reason === 'cookieReauthFailed' || error.reason === 'missingCookies') {
+          await deleteAuthCookies(account.id);
+        }
+        useAccountStore.getState().markNeedsReauth(account.id);
+      }
+      throw error;
+    }
+    if (isAuthFailure(error)) {
+      await rejectStoredAuth(account.id, 'cookieReauthFailed');
+    }
+    if (!force && error instanceof TypeError) {
+      throw new AuthRecoveryRequired(
+        account.id,
+        'networkUnavailable',
+        'temporaryAuthUnavailable',
+        'Network unavailable. Try again.',
+      );
+    }
+    throw error;
+  }
+}
+
+function shouldRefreshTokens(tokens: StoredAuthTokens) {
+  if (!tokens.expiresAt) {
+    return false;
+  }
+  return new Date(tokens.expiresAt).getTime() - Date.now() <= TOKEN_REFRESH_WINDOW_MS;
+}
+
+async function rejectStoredAuth(accountId: string, reason: 'cookieReauthFailed' | 'identityMismatch') {
+  await deleteAuthMaterial(accountId);
+  useAccountStore.getState().markNeedsReauth(accountId);
+  throw new AuthRecoveryRequired(accountId, reason, 'interactiveLoginRequired', 'Sign in again.');
 }
 
 async function getEntitlementsToken(accessToken: string) {

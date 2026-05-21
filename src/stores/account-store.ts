@@ -2,8 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import type { ProfileSnapshot, StoredAuthTokens, StoredRiotAccount } from '@/lib/account';
-import { deleteAuthTokens, saveAuthTokens } from '@/lib/secure-auth-store';
+import type { ProfileSnapshot, StoredAuthTokens, StoredRiotAccount, StoredRiotCookie } from '@/lib/account';
+import { deleteAuthMaterial, saveAuthCookies, saveAuthTokens } from '@/lib/secure-auth-store';
 
 type AccountStore = {
   accounts: StoredRiotAccount[];
@@ -12,7 +12,11 @@ type AccountStore = {
   setHasHydrated: (hasHydrated: boolean) => void;
   ensureActiveAccount: () => void;
   switchAccount: (accountId: string) => void;
-  saveAuthenticatedAccount: (account: StoredRiotAccount, tokens: StoredAuthTokens) => Promise<void>;
+  saveAuthenticatedAccount: (
+    account: StoredRiotAccount,
+    tokens: StoredAuthTokens,
+    cookies?: StoredRiotCookie[],
+  ) => Promise<void>;
   setProfileSnapshot: (accountId: string, snapshot: ProfileSnapshot) => void;
   markNeedsReauth: (accountId: string) => void;
   removeAccount: (accountId: string) => Promise<string | null>;
@@ -40,8 +44,11 @@ export const useAccountStore = create<AccountStore>()(
           set({ activeAccountId: accountId });
         }
       },
-      saveAuthenticatedAccount: async (account, tokens) => {
+      saveAuthenticatedAccount: async (account, tokens, cookies) => {
         await saveAuthTokens(account.id, tokens);
+        if (cookies?.length) {
+          await saveAuthCookies(account.id, cookies);
+        }
         set((state) => {
           const existing = state.accounts.find((item) => item.id === account.id);
           const nextAccount: StoredRiotAccount = {
@@ -75,14 +82,14 @@ export const useAccountStore = create<AccountStore>()(
         }));
       },
       removeAccount: async (accountId) => {
-        await deleteAuthTokens(accountId);
+        await deleteAuthMaterial(accountId);
         let nextActiveAccountId: string | null = null;
         set((state) => {
           const accounts = state.accounts.filter((account) => account.id !== accountId);
           nextActiveAccountId = accounts[0]?.id ?? null;
           return {
             accounts,
-            activeAccountId: state.activeAccountId === accountId ? nextActiveAccountId : state.activeAccountId,
+            activeAccountId: state.activeAccountId === accountId ? null : state.activeAccountId,
           };
         });
         return nextActiveAccountId;

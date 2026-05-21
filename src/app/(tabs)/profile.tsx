@@ -5,14 +5,13 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/primary-button';
-import { SwitchAccountSheet } from '@/components/switch-account-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getAccountLabel } from '@/lib/account';
-import { getAuthTokens } from '@/lib/secure-auth-store';
-import { fetchProfileSnapshot, isAuthFailure } from '@/lib/valorant-api';
+import { isAuthRecoveryRequired } from '@/lib/auth-coordinator';
+import { fetchProfileSnapshot } from '@/lib/valorant-api';
 import { useAccountStore } from '@/stores/account-store';
 
 export default function ProfileScreen() {
@@ -21,13 +20,26 @@ export default function ProfileScreen() {
   const account = useAccountStore((state) =>
     state.accounts.find((item) => item.id === state.activeAccountId),
   );
+  const accounts = useAccountStore((state) => state.accounts);
   const accountStatus = account?.status;
   const setProfileSnapshot = useAccountStore((state) => state.setProfileSnapshot);
-  const markNeedsReauth = useAccountStore((state) => state.markNeedsReauth);
   const removeAccount = useAccountStore((state) => state.removeAccount);
-  const [sheetVisible, setSheetVisible] = React.useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+
+  const routeToAuthRecovery = React.useCallback((accountId: string) => {
+    if (accounts.length > 1) {
+      router.replace({
+        pathname: '/switch-account',
+        params: { reason: 'reauthFailed', accountId, returnTo: '/(tabs)/profile' },
+      } as never);
+      return;
+    }
+    router.replace({
+      pathname: '/login',
+      params: { mode: 'reauth', accountId, returnTo: '/(tabs)/profile' },
+    } as never);
+  }, [accounts.length]);
 
   const refreshProfile = React.useCallback(async () => {
     const currentAccount = useAccountStore.getState().accounts.find((item) => item.id === activeAccountId);
@@ -38,25 +50,22 @@ export default function ProfileScreen() {
     setRefreshing(true);
     setError(null);
     try {
-      const tokens = await getAuthTokens(currentAccount.id);
-      if (!tokens) {
-        markNeedsReauth(currentAccount.id);
-        setError('Sign in again to refresh this account.');
-        return;
-      }
-      const snapshot = await fetchProfileSnapshot(currentAccount, tokens);
+      const snapshot = await fetchProfileSnapshot(currentAccount);
       setProfileSnapshot(currentAccount.id, snapshot);
     } catch (refreshError) {
-      if (isAuthFailure(refreshError)) {
-        markNeedsReauth(currentAccount.id);
-        setError('Your Riot session expired. Sign in again to refresh this account.');
+      if (isAuthRecoveryRequired(refreshError)) {
+        if (refreshError.recoveryKind === 'temporaryAuthUnavailable') {
+          setError(refreshError.message);
+        } else {
+          routeToAuthRecovery(currentAccount.id);
+        }
       } else {
         setError(refreshError instanceof Error ? refreshError.message : 'Could not refresh profile.');
       }
     } finally {
       setRefreshing(false);
     }
-  }, [activeAccountId, markNeedsReauth, setProfileSnapshot]);
+  }, [activeAccountId, routeToAuthRecovery, setProfileSnapshot]);
 
   React.useEffect(() => {
     void refreshProfile();
@@ -79,6 +88,11 @@ export default function ProfileScreen() {
             const nextActiveAccountId = await removeAccount(account.id);
             if (!nextActiveAccountId) {
               router.replace('/onboarding' as never);
+            } else {
+              router.replace({
+                pathname: '/switch-account',
+                params: { reason: 'afterRemoval', returnTo: '/(tabs)/profile' },
+              } as never);
             }
           })();
         },
@@ -92,7 +106,14 @@ export default function ProfileScreen() {
   };
 
   const reauthenticate = () => {
-    router.push({ pathname: '/login', params: { shard: account.shard } } as never);
+    router.push({
+      pathname: '/login',
+      params: { mode: 'reauth', accountId: account.id, returnTo: '/(tabs)/profile' },
+    } as never);
+  };
+
+  const switchAccount = () => {
+    router.push({ pathname: '/switch-account', params: { reason: 'choose', returnTo: '/(tabs)/profile' } } as never);
   };
 
   return (
@@ -123,7 +144,7 @@ export default function ProfileScreen() {
             </ThemedView>
           )}
 
-          <ThemedView type="backgroundElement" style={styles.section}>
+          {/* <ThemedView type="backgroundElement" style={styles.section}>
             <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
               INFO
             </ThemedText>
@@ -131,7 +152,7 @@ export default function ProfileScreen() {
             <Pressable onPress={copyPuuid} style={({ pressed }) => pressed && styles.pressed}>
               <InfoRow label="PUUID" value={account.puuid} />
             </Pressable>
-          </ThemedView>
+          </ThemedView> */}
 
           <ThemedView type="backgroundElement" style={styles.section}>
             <ThemedView type="backgroundElement"  style={styles.sectionHeader}>
@@ -175,22 +196,14 @@ export default function ProfileScreen() {
             <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
               ACCOUNT
             </ThemedText>
-            <MenuButton label="Switch Account" onPress={() => setSheetVisible(true)} />
+            <MenuButton label="Switch Account" onPress={switchAccount} />
             <MenuButton label="Logout" destructive onPress={confirmLogout} />
           </ThemedView>
         </ScrollView>
-
-        <SwitchAccountSheet
-          visible={sheetVisible}
-          onClose={() => setSheetVisible(false)}
-          onAddAccount={() => {
-            setSheetVisible(false);
-            router.push('/onboarding' as never);
-          }}
-        />
       </SafeAreaView>
     </ThemedView>
   );
+
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {

@@ -40,6 +40,16 @@ export type StoredAuthTokens = {
   expiresAt?: string;
 };
 
+export type StoredRiotCookie = {
+  name: string;
+  value: string;
+  domain: string;
+  path?: string;
+  expires?: string;
+  secure?: boolean;
+  httpOnly?: boolean;
+};
+
 export function isValorantShard(value: unknown): value is ValorantShard {
   return typeof value === 'string' && VALORANT_SHARDS.some((shard) => shard.id === value);
 }
