@@ -8,7 +8,8 @@
     "scheme": "primordium",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "dev.shamah.primordium"
     },
     "android": {
       "adaptiveIcon": {
@@ -17,6 +18,7 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "package": "dev.shamah.primordium",
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -39,6 +41,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cd80b487-711c-4835-be99-66a95a7ae988"
+      }
     }
   }
 }
