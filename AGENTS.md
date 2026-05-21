@@ -2,6 +2,8 @@ Read the exact versioned Expo docs at https://docs.expo.dev/versions/v55.0.0/ be
 
 For all Riot APIs Reference, use https://valapidocs.techchrism.me/.
 
+Check @REFERENCE.md for logic flow/approach reference.
+
 ## Agent skills
 
 ### Issue tracker
