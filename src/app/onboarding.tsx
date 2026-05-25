@@ -9,6 +9,7 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { VALORANT_SHARDS, type ValorantShard } from '@/lib/account';
+import { buildOnboardingReturnTo, getLoginHref, getSwitchAccountHref } from '@/lib/navigation';
 import { useAccountStore } from '@/stores/account-store';
 
 export default function OnboardingScreen() {
@@ -19,14 +20,11 @@ export default function OnboardingScreen() {
   const [selectedShard, setSelectedShard] = React.useState<ValorantShard>(initialShard);
 
   const startLogin = () => {
-    router.push({ pathname: '/login', params: { mode: 'add', shard: selectedShard, returnTo: '/(tabs)/profile' } } as never);
+    router.push(getLoginHref({ mode: 'add', shard: selectedShard, returnTo: '/profile' }));
   };
 
   const switchAccount = () => {
-    router.push({
-      pathname: '/switch-account',
-      params: { reason: 'choose', returnTo: `/onboarding?shard=${selectedShard}` },
-    } as never);
+    router.push(getSwitchAccountHref({ reason: 'choose', returnTo: buildOnboardingReturnTo(selectedShard) }));
   };
 
   return (

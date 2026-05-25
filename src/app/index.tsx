@@ -31,10 +31,10 @@ export default function HomeScreen() {
   }
 
   if (accounts.length === 0) {
-    return <Redirect href={'/onboarding' as never} />;
+    return <Redirect href="/onboarding" />;
   }
 
-  return <Redirect href={'/(tabs)/home' as never} />;
+  return <Redirect href="/home" />;
 }
 
 const styles = StyleSheet.create({

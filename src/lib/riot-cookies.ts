@@ -1,15 +1,8 @@
 import CookieManager from '@preeternal/react-native-cookie-manager';
 import { Platform } from 'react-native';
 
+import { RIOT_AUTH_COOKIE_URLS, RIOT_AUTH_DOMAINS } from '@/constants/riot';
 import type { StoredRiotCookie } from '@/lib/account';
-
-const RIOT_COOKIE_URLS = [
-  'https://auth.riotgames.com',
-  'https://authenticate.riotgames.com',
-  'https://riotgames.com',
-] as const;
-
-const RIOT_AUTH_DOMAINS = ['auth.riotgames.com', 'authenticate.riotgames.com', 'riotgames.com', '.riotgames.com'];
 
 type NativeCookie = Partial<StoredRiotCookie> & {
   name?: string;
@@ -35,7 +28,7 @@ export async function clearRiotCookies() {
 
 export async function captureRiotAuthCookies() {
   const cookies = new Map<string, StoredRiotCookie>();
-  for (const url of RIOT_COOKIE_URLS) {
+  for (const url of RIOT_AUTH_COOKIE_URLS) {
     const hostname = new URL(url).hostname;
     const jars = await getCookieJars(url);
     for (const jar of jars) {

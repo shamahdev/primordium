@@ -5,17 +5,14 @@ import { WebView } from 'react-native-webview';
 import { PrimaryButton } from '@/components/primary-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { RIOT_LOGIN_URL } from '@/constants/riot';
 import { Spacing } from '@/constants/theme';
 import type { StoredAuthTokens, StoredRiotAccount, StoredRiotCookie, ValorantShard } from '@/lib/account';
 import { captureRiotAuthCookies, clearRiotCookies } from '@/lib/riot-cookies';
-import {
-  authenticateRiotLogin,
-  getAccessTokenFromUri,
-  RIOT_LOGIN_URL,
-  type ValorantApiError,
-} from '@/lib/valorant-api';
+import { readRiotAccessTokenFromRedirectUri } from '@/lib/riot-login';
+import { authenticateRiotLogin, type ValorantApiError } from '@/lib/valorant-api';
 
-type LoginWebViewProps = {
+type RiotLoginWebViewProps = {
   shard: ValorantShard;
   onCancel: () => void;
   onAuthenticated: (result: {
@@ -26,7 +23,7 @@ type LoginWebViewProps = {
   }) => Promise<void>;
 };
 
-export function LoginWebView({ shard, onCancel, onAuthenticated }: LoginWebViewProps) {
+export function RiotLoginWebView({ shard, onCancel, onAuthenticated }: RiotLoginWebViewProps) {
   const handledRedirectRef = React.useRef(false);
   const [loading, setLoading] = React.useState('Preparing secure login...');
   const [error, setError] = React.useState<string | null>(null);
@@ -54,7 +51,7 @@ export function LoginWebView({ shard, onCancel, onAuthenticated }: LoginWebViewP
     setError(null);
     setLoading('Validating Riot account...');
     try {
-      const accessToken = getAccessTokenFromUri(url);
+      const accessToken = readRiotAccessTokenFromRedirectUri(url);
       const result = await authenticateRiotLogin(accessToken, shard);
       let cookies: StoredRiotCookie[] = [];
       let cookieCaptureFailed = false;

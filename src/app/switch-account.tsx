@@ -9,11 +9,16 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getAccountLabel } from '@/lib/account';
-import { isAuthRecoveryRequired } from '@/lib/auth-coordinator';
+import { isAuthRecoveryRequired } from '@/lib/auth-recovery';
+import {
+  getLoginHref,
+  getOnboardingHref,
+  getReturnToHref,
+  sanitizeReturnToRoute,
+  type SwitchReason,
+} from '@/lib/navigation';
 import { ensureAccountSession } from '@/lib/valorant-api';
 import { useAccountStore } from '@/stores/account-store';
-
-type SwitchReason = 'choose' | 'reauthFailed' | 'afterRemoval';
 
 export default function SwitchAccountScreen() {
   const params = useLocalSearchParams<{ returnTo?: string; reason?: SwitchReason; accountId?: string }>();
@@ -23,7 +28,7 @@ export default function SwitchAccountScreen() {
   const switchAccount = useAccountStore((state) => state.switchAccount);
   const [busyAccountId, setBusyAccountId] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
-  const returnTo = params.returnTo || '/(tabs)/profile';
+  const returnTo = sanitizeReturnToRoute(params.returnTo);
   const failedAccount = accounts.find((account) => account.id === params.accountId);
 
   const chooseAccount = async (accountId: string) => {
@@ -41,7 +46,7 @@ export default function SwitchAccountScreen() {
       }
       await ensureAccountSession(account);
       switchAccount(account.id);
-      router.replace('/(tabs)/profile');
+      router.replace('/profile');
     } catch (selectionError) {
       if (isAuthRecoveryRequired(selectionError)) {
         if (selectionError.recoveryKind === 'interactiveLoginRequired') {
@@ -58,11 +63,11 @@ export default function SwitchAccountScreen() {
   };
 
   const cancel = () => {
-    router.replace(returnTo as never);
+    router.replace(getReturnToHref(returnTo));
   };
 
   const addAccount = () => {
-    router.push('/onboarding' as never);
+    router.push(getOnboardingHref());
   };
 
   return (
@@ -136,7 +141,7 @@ export default function SwitchAccountScreen() {
   );
 
   function routeToReauth(accountId: string) {
-    router.replace({ pathname: '/login', params: { mode: 'reauth', accountId, returnTo } } as never);
+    router.replace(getLoginHref({ mode: 'reauth', accountId, returnTo }));
   }
 }
 

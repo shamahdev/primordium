@@ -1,12 +1,10 @@
 import { jwtDecode } from 'jwt-decode';
 
-import { AuthRecoveryRequired, isAuthRecoveryRequired, requestSilentReauth } from '@/lib/auth-coordinator';
 import { getAccountId, type ProfileSnapshot, type StoredAuthTokens, type StoredRiotAccount, type ValorantShard } from '@/lib/account';
+import { AuthRecoveryRequired, isAuthRecoveryRequired } from '@/lib/auth-recovery';
+import { refreshStoredRiotSession } from '@/lib/riot-session-refresh';
 import { deleteAuthCookies, deleteAuthMaterial, getAuthTokens } from '@/lib/secure-auth-store';
 import { useAccountStore } from '@/stores/account-store';
-
-export const RIOT_LOGIN_URL =
-  'https://auth.riotgames.com/authorize?redirect_uri=https%3A%2F%2Fplayvalorant.com%2Fopt_in&client_id=play-valorant-web-prod&response_type=token%20id_token&nonce=1&scope=account%20openid';
 
 const RIOT_CLIENT_PLATFORM =
   'ew0KCSJwbGF0Zm9ybVR5cGUiOiAiUEMiLA0KCSJwbGF0Zm9ybU9TIjogIldpbmRvd3MiLA0KCSJwbGF0Zm9ybU9TVmVyc2lvbiI6ICIxMC4wLjE5MDQyLjEuMjU2LjY0Yml0IiwNCgkicGxhdGZvcm1DaGlwc2V0IjogIlVua25vd24iDQp9';
@@ -54,14 +52,6 @@ export class ValorantApiError extends Error {
   ) {
     super(message);
   }
-}
-
-export function getAccessTokenFromUri(uri: string) {
-  const match = uri.match(/access_token=([^&#]+)/);
-  if (!match) {
-    throw new ValorantApiError('Could not read Riot access token from redirect.');
-  }
-  return decodeURIComponent(match[1]);
 }
 
 export function isAuthFailure(error: unknown) {
@@ -176,7 +166,7 @@ async function getValidAuthTokens(account: StoredRiotAccount) {
 
 async function refreshAuthTokens(account: StoredRiotAccount, force: boolean) {
   try {
-    const result = await requestSilentReauth(account);
+    const result = await refreshStoredRiotSession(account);
     const authenticated = await authenticateRiotLogin(result.accessToken, account.shard);
     if (authenticated.account.puuid !== account.puuid) {
       await rejectStoredAuth(account.id, 'identityMismatch');

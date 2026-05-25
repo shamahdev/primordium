@@ -27,7 +27,7 @@ export function SwitchAccountSheet({ visible, onClose, onAddAccount }: SwitchAcc
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <ThemedView style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={onClose} />
-        <SafeAreaView edges={['bottom']} style={[styles.sheet, { backgroundColor: theme.background }]}> 
+        <SafeAreaView edges={['bottom']} style={[styles.sheet, { backgroundColor: theme.background }]}>
           <ThemedView style={[styles.handle, { backgroundColor: theme.textSecondary }]} />
           <ThemedText type="subtitle">Switch Account</ThemedText>
           <ThemedView style={styles.accounts}>
@@ -39,7 +39,7 @@ export function SwitchAccountSheet({ visible, onClose, onAddAccount }: SwitchAcc
                   onPress={() => {
                     switchAccount(account.id);
                     onClose();
-                    router.replace('/(tabs)/profile' as never);
+                    router.replace('/profile');
                   }}
                   style={({ pressed }) => [
                     styles.accountRow,

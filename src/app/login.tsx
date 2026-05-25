@@ -3,26 +3,33 @@ import React from 'react';
 import { Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { LoginWebView } from '@/components/login-webview';
+import { RiotLoginWebView } from '@/components/riot-login-webview';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { getAccountLabel, isValorantShard, type StoredAuthTokens, type StoredRiotAccount, type StoredRiotCookie, type ValorantShard } from '@/lib/account';
+import {
+  getOnboardingHref,
+  getReturnToHref,
+  getSwitchAccountHref,
+  sanitizeReturnToRoute,
+  type LoginMode,
+} from '@/lib/navigation';
 import { useAccountStore } from '@/stores/account-store';
 
 export default function LoginScreen() {
-  const params = useLocalSearchParams<{ mode?: 'add' | 'reauth'; shard?: string; accountId?: string; returnTo?: string }>();
+  const params = useLocalSearchParams<{ mode?: LoginMode; shard?: string; accountId?: string; returnTo?: string }>();
   const accounts = useAccountStore((state) => state.accounts);
   const saveAuthenticatedAccount = useAccountStore((state) => state.saveAuthenticatedAccount);
   const mode = params.mode ?? 'add';
   const reauthAccount = accounts.find((account) => account.id === params.accountId);
   const shard = mode === 'reauth' ? reauthAccount?.shard : isValorantShard(params.shard) ? params.shard : undefined;
-  const returnTo = params.returnTo || '/(tabs)/profile';
+  const returnTo = sanitizeReturnToRoute(params.returnTo);
   const [webViewKey, setWebViewKey] = React.useState(0);
 
   React.useEffect(() => {
     if (!shard || (mode === 'reauth' && !reauthAccount)) {
-      router.replace('/onboarding' as never);
+      router.replace(getOnboardingHref());
     }
   }, [mode, reauthAccount, shard]);
 
@@ -32,14 +39,14 @@ export default function LoginScreen() {
 
   const cancel = () => {
     if (mode === 'reauth' && accounts.length > 1) {
-      router.replace({ pathname: '/switch-account', params: { reason: 'choose', returnTo } } as never);
+      router.replace(getSwitchAccountHref({ reason: 'choose', returnTo }));
       return;
     }
     if (mode === 'reauth') {
-      router.replace('/onboarding' as never);
+      router.replace(getOnboardingHref());
       return;
     }
-    router.replace((accounts.length > 0 ? returnTo : '/onboarding') as never);
+    router.replace(accounts.length > 0 ? getReturnToHref(returnTo) : getOnboardingHref());
   };
 
   const handleAuthenticated = async (result: {
@@ -75,7 +82,7 @@ export default function LoginScreen() {
               : `Region: ${shard.toUpperCase()}`}
           </ThemedText>
         </ThemedView>
-        <LoginWebView
+        <RiotLoginWebView
           key={webViewKey}
           shard={shard as ValorantShard}
           onCancel={cancel}
@@ -95,7 +102,7 @@ export default function LoginScreen() {
     if (result.cookieCaptureFailed || result.cookies.length === 0) {
       Alert.alert('Login saved', 'Future silent sign-in may require another Riot login because cookies could not be saved.');
     }
-    router.replace(returnTo as never);
+    router.replace(getReturnToHref(returnTo));
   }
 
   async function handleReauthMismatch(result: {

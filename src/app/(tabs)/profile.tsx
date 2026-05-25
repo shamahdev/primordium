@@ -1,4 +1,3 @@
-import * as Clipboard from 'expo-clipboard';
 import { Redirect, router } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet } from 'react-native';
@@ -10,7 +9,12 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getAccountLabel } from '@/lib/account';
-import { isAuthRecoveryRequired } from '@/lib/auth-coordinator';
+import { isAuthRecoveryRequired } from '@/lib/auth-recovery';
+import {
+  getLoginHref,
+  getOnboardingHref,
+  getSwitchAccountHref,
+} from '@/lib/navigation';
 import { fetchProfileSnapshot } from '@/lib/valorant-api';
 import { useAccountStore } from '@/stores/account-store';
 
@@ -29,16 +33,10 @@ export default function ProfileScreen() {
 
   const routeToAuthRecovery = React.useCallback((accountId: string) => {
     if (accounts.length > 1) {
-      router.replace({
-        pathname: '/switch-account',
-        params: { reason: 'reauthFailed', accountId, returnTo: '/(tabs)/profile' },
-      } as never);
+      router.replace(getSwitchAccountHref({ reason: 'reauthFailed', accountId, returnTo: '/profile' }));
       return;
     }
-    router.replace({
-      pathname: '/login',
-      params: { mode: 'reauth', accountId, returnTo: '/(tabs)/profile' },
-    } as never);
+    router.replace(getLoginHref({ mode: 'reauth', accountId, returnTo: '/profile' }));
   }, [accounts.length]);
 
   const refreshProfile = React.useCallback(async () => {
@@ -72,7 +70,7 @@ export default function ProfileScreen() {
   }, [accountStatus, activeAccountId, refreshProfile]);
 
   if (!account) {
-    return <Redirect href={'/' as never} />;
+    return <Redirect href="/" />;
   }
 
   const snapshot = account.profileSnapshot;
@@ -87,12 +85,9 @@ export default function ProfileScreen() {
           void (async () => {
             const nextActiveAccountId = await removeAccount(account.id);
             if (!nextActiveAccountId) {
-              router.replace('/onboarding' as never);
+              router.replace(getOnboardingHref());
             } else {
-              router.replace({
-                pathname: '/switch-account',
-                params: { reason: 'afterRemoval', returnTo: '/(tabs)/profile' },
-              } as never);
+              router.replace(getSwitchAccountHref({ reason: 'afterRemoval', returnTo: '/profile' }));
             }
           })();
         },
@@ -100,20 +95,12 @@ export default function ProfileScreen() {
     ]);
   };
 
-  const copyPuuid = async () => {
-    await Clipboard.setStringAsync(account.puuid);
-    Alert.alert('Copied', 'PUUID copied to clipboard.');
-  };
-
   const reauthenticate = () => {
-    router.push({
-      pathname: '/login',
-      params: { mode: 'reauth', accountId: account.id, returnTo: '/(tabs)/profile' },
-    } as never);
+    router.push(getLoginHref({ mode: 'reauth', accountId: account.id, returnTo: '/profile' }));
   };
 
   const switchAccount = () => {
-    router.push({ pathname: '/switch-account', params: { reason: 'choose', returnTo: '/(tabs)/profile' } } as never);
+    router.push(getSwitchAccountHref({ reason: 'choose', returnTo: '/profile' }));
   };
 
   return (
@@ -144,18 +131,8 @@ export default function ProfileScreen() {
             </ThemedView>
           )}
 
-          {/* <ThemedView type="backgroundElement" style={styles.section}>
-            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
-              INFO
-            </ThemedText>
-            <InfoRow label="Region" value={account.shard.toUpperCase()} />
-            <Pressable onPress={copyPuuid} style={({ pressed }) => pressed && styles.pressed}>
-              <InfoRow label="PUUID" value={account.puuid} />
-            </Pressable>
-          </ThemedView> */}
-
           <ThemedView type="backgroundElement" style={styles.section}>
-            <ThemedView type="backgroundElement"  style={styles.sectionHeader}>
+            <ThemedView type="backgroundElement" style={styles.sectionHeader}>
               <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
                 PROGRESS
               </ThemedText>

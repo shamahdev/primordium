@@ -4,14 +4,14 @@ import React from 'react';
 import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import { SilentReauthProvider } from '@/components/silent-reauth-provider';
+import { RiotSessionRefreshWebView } from '@/components/riot-session-refresh-webview';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AnimatedSplashOverlay />
-      <SilentReauthProvider />
+      <RiotSessionRefreshWebView />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="onboarding" />

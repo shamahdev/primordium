@@ -15,7 +15,7 @@ export default function AuthenticatedHomeScreen() {
   );
 
   if (!account) {
-    return <Redirect href={'/' as never} />;
+    return <Redirect href="/" />;
   }
 
   return (
