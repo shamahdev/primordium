@@ -41,3 +41,4 @@ _Avoid_: Profile, account data
 
 - "account" was used to mean both the Riot login identity and the visible Valorant profile — resolved: the canonical term is **Stored Riot Account**, and the visible profile details are a **Profile Snapshot**.
 - "region" maps to Valorant API routing shards in implementation — resolved: use **Region** in domain language and user-facing copy.
+- Navigation copy needs a shorter label than **Stored Riot Account** — resolved: `Accounts` is acceptable as compact user-facing navigation copy, but domain discussions should still use **Stored Riot Account**.

@@ -3,6 +3,7 @@ import React from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ErrorBanner } from '@/components/error-banner';
 import { PrimaryButton } from '@/components/primary-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -73,30 +74,21 @@ export default function SwitchAccountScreen() {
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView style={styles.safeArea}>
+        {params.reason === 'reauthFailed' && failedAccount && (
+          <ErrorBanner
+            message={`Sign in again as ${getAccountLabel(failedAccount)}.`}
+            actionLabel="Sign in"
+            onPress={() => routeToReauth(failedAccount.id)}
+          />
+        )}
+
+        {error && <ErrorBanner message={error} />}
+
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <ThemedView style={styles.header}>
             <ThemedText type="title">Switch Account</ThemedText>
             <ThemedText themeColor="textSecondary">{getReasonCopy(params.reason)}</ThemedText>
           </ThemedView>
-
-          {params.reason === 'reauthFailed' && failedAccount && (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="smallBold">Sign in again as {getAccountLabel(failedAccount)}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                Riot needs a fresh login for this Stored Riot Account.
-              </ThemedText>
-              <PrimaryButton label="Sign in again" onPress={() => routeToReauth(failedAccount.id)} />
-            </ThemedView>
-          )}
-
-          {error && (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="smallBold">Could not switch</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                {error}
-              </ThemedText>
-            </ThemedView>
-          )}
 
           <ThemedView style={styles.accounts}>
             {accounts.map((account) => {
@@ -172,11 +164,6 @@ const styles = StyleSheet.create({
   header: {
     gap: Spacing.two,
     paddingVertical: Spacing.three,
-  },
-  card: {
-    gap: Spacing.two,
-    padding: Spacing.three,
-    borderRadius: Spacing.four,
   },
   accounts: {
     gap: Spacing.two,

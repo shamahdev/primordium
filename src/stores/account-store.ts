@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import type { ProfileSnapshot, StoredAuthTokens, StoredRiotAccount, StoredRiotCookie } from '@/lib/account';
+import type { ProfileSnapshot, StoreSnapshot, StoredAuthTokens, StoredRiotAccount, StoredRiotCookie } from '@/lib/account';
 import { deleteAuthMaterial, saveAuthCookies, saveAuthTokens } from '@/lib/secure-auth-store';
 
 type AccountStore = {
@@ -18,6 +18,7 @@ type AccountStore = {
     cookies?: StoredRiotCookie[],
   ) => Promise<void>;
   setProfileSnapshot: (accountId: string, snapshot: ProfileSnapshot) => void;
+  setStoreSnapshot: (accountId: string, snapshot: StoreSnapshot) => void;
   markNeedsReauth: (accountId: string) => void;
   removeAccount: (accountId: string) => Promise<string | null>;
 };
@@ -55,6 +56,7 @@ export const useAccountStore = create<AccountStore>()(
             ...account,
             createdAt: existing?.createdAt ?? account.createdAt,
             profileSnapshot: existing?.profileSnapshot,
+            storeSnapshot: existing?.storeSnapshot,
             status: 'ready',
             updatedAt: new Date().toISOString(),
           };
@@ -70,6 +72,15 @@ export const useAccountStore = create<AccountStore>()(
           accounts: state.accounts.map((account) =>
             account.id === accountId
               ? { ...account, profileSnapshot: snapshot, updatedAt: new Date().toISOString() }
+              : account,
+          ),
+        }));
+      },
+      setStoreSnapshot: (accountId, snapshot) => {
+        set((state) => ({
+          accounts: state.accounts.map((account) =>
+            account.id === accountId
+              ? { ...account, storeSnapshot: snapshot, updatedAt: new Date().toISOString() }
               : account,
           ),
         }));

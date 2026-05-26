@@ -1,6 +1,7 @@
 import type { StoredRiotAccount, StoredRiotCookie } from '@/lib/account';
 import { RIOT_LOGIN_URL } from '@/constants/riot';
 import { AuthRecoveryRequired } from '@/lib/auth-recovery';
+import { log } from '@/lib/logger';
 import { captureRiotAuthCookies, clearRiotCookies, injectRiotAuthCookies } from '@/lib/riot-cookies';
 import { readRiotAccessTokenFromRedirectUri } from '@/lib/riot-login';
 import { getAuthCookies } from '@/lib/secure-auth-store';
@@ -64,14 +65,18 @@ async function runQueuedSessionRefresh(account: StoredRiotAccount) {
 
 async function runSessionRefresh(account: StoredRiotAccount, nextAdapter: RiotSessionRefreshWebViewAdapter) {
   const cookies = await getAuthCookies(account.id);
+  log.auth.debug('runSessionRefresh: cookies loaded', { accountId: account.id, cookieCount: cookies?.length ?? 0 });
   if (!cookies?.length) {
+    log.auth.warn('runSessionRefresh: no cookies, throwing missingCookies');
     throw new AuthRecoveryRequired(account.id, 'missingCookies', 'interactiveLoginRequired', 'Saved Riot sign-in has expired.');
   }
 
   await clearRiotCookies();
   try {
     await injectRiotAuthCookies(cookies);
+    log.auth.debug('runSessionRefresh: cookies injected, calling adapter');
     const result = await nextAdapter({ sourceUri: RIOT_LOGIN_URL });
+    log.auth.info('runSessionRefresh: adapter result', { kind: result.kind });
     if (result.kind === 'loginRequired') {
       throw new AuthRecoveryRequired(account.id, 'cookieReauthFailed', 'interactiveLoginRequired', 'Riot requires sign-in again.');
     }

@@ -3,7 +3,7 @@ import React from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { PrimaryButton } from '@/components/primary-button';
+import { ErrorBanner } from '@/components/error-banner';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -19,7 +19,6 @@ import { fetchProfileSnapshot } from '@/lib/valorant-api';
 import { useAccountStore } from '@/stores/account-store';
 
 export default function ProfileScreen() {
-  const theme = useTheme();
   const activeAccountId = useAccountStore((state) => state.activeAccountId);
   const account = useAccountStore((state) =>
     state.accounts.find((item) => item.id === state.activeAccountId),
@@ -105,32 +104,20 @@ export default function ProfileScreen() {
 
   return (
     <ThemedView style={styles.screen}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView edges={['left', 'right']} style={styles.safeArea}>
+        {account.status === 'needsReauth' && (
+          <ErrorBanner
+            message="Session expired. Sign in again to refresh profile."
+            actionLabel="Sign in"
+            onPress={reauthenticate}
+          />
+        )}
+
+        {error && account.status !== 'needsReauth' && (
+          <ErrorBanner message={error} actionLabel="Retry" onPress={refreshProfile} />
+        )}
+
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <ThemedView style={styles.header}>
-            <ThemedView style={[styles.avatar, { backgroundColor: theme.primary }]}>
-              <ThemedText type="subtitle" style={{ color: theme.primaryForeground }}>
-                {account.gameName.slice(0, 2).toUpperCase()}
-              </ThemedText>
-            </ThemedView>
-            <ThemedView style={styles.headerText}>
-              <ThemedText type="subtitle">{getAccountLabel(account)}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                Region {account.shard.toUpperCase()}
-              </ThemedText>
-            </ThemedView>
-          </ThemedView>
-
-          {account.status === 'needsReauth' && (
-            <ThemedView type="backgroundElement" style={styles.warningCard}>
-              <ThemedText type="smallBold">Re-authentication required</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                This account remains saved, but its Riot token can no longer refresh profile data.
-              </ThemedText>
-              <PrimaryButton label="Sign in again" onPress={reauthenticate} />
-            </ThemedView>
-          )}
-
           <ThemedView type="backgroundElement" style={styles.section}>
             <ThemedView type="backgroundElement" style={styles.sectionHeader}>
               <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
@@ -142,7 +129,7 @@ export default function ProfileScreen() {
             <InfoRow label="XP" value={snapshot ? snapshot.xp.toLocaleString() : '--'} />
           </ThemedView>
 
-          <ThemedView type="backgroundElement" style={styles.section}>
+          {/* <ThemedView type="backgroundElement" style={styles.section}>
             <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
               BALANCES
             </ThemedText>
@@ -155,19 +142,7 @@ export default function ProfileScreen() {
               label="Kingdom Credits"
               value={snapshot ? snapshot.balances.kingdomCredits.toLocaleString() : '--'}
             />
-          </ThemedView>
-
-          {error && (
-            <ThemedView type="backgroundElement" style={styles.warningCard}>
-              <ThemedText type="smallBold">Profile refresh failed</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                {error}
-              </ThemedText>
-              {account.status !== 'needsReauth' && (
-                <PrimaryButton label="Retry refresh" onPress={refreshProfile} disabled={refreshing} />
-              )}
-            </ThemedView>
-          )}
+          </ThemedView> */}
 
           <ThemedView type="backgroundElement" style={styles.section}>
             <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
@@ -217,23 +192,6 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     gap: Spacing.three,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingVertical: Spacing.three,
-  },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerText: {
-    flex: 1,
-    gap: Spacing.one,
-  },
   section: {
     borderRadius: Spacing.four,
     padding: Spacing.three,
@@ -259,11 +217,6 @@ const styles = StyleSheet.create({
   },
   menuButton: {
     paddingVertical: Spacing.two,
-  },
-  warningCard: {
-    borderRadius: Spacing.four,
-    padding: Spacing.three,
-    gap: Spacing.two,
   },
   pressed: {
     opacity: 0.7,

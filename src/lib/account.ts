@@ -20,6 +20,45 @@ export type ProfileSnapshot = {
   fetchedAt: string;
 };
 
+export type StoreCurrency = 'vp' | 'kingdomCredits' | 'unknown';
+
+export type StoreItemRarity = 'select' | 'deluxe' | 'premium' | 'exclusive' | 'ultra';
+
+export type StorePrice = {
+  currency: StoreCurrency;
+  amount: number;
+  originalAmount?: number;
+  discountPercent?: number;
+};
+
+export type StoreItem = {
+  id: string;
+  title: string;
+  imageUrl?: string | number;
+  itemType: 'skin' | 'buddy' | 'spray' | 'card' | 'title' | 'flex' | 'unknown';
+  rarity?: StoreItemRarity;
+  price: StorePrice;
+};
+
+export type StoreCarouselCard = {
+  id: string;
+  title: string;
+  subtitle: string;
+  imageUrl?: string | number;
+  section: 'featuredBundle' | 'nightMarket';
+  expiresAt: string;
+  items: StoreItem[];
+};
+
+export type StoreSnapshot = {
+  cards: StoreCarouselCard[];
+  dailyOffers: StoreItem[];
+  dailyResetAt: string;
+  accessoryOffers: StoreItem[];
+  accessoryResetAt: string;
+  fetchedAt: string;
+};
+
 export type StoredRiotAccount = {
   id: string;
   puuid: string;
@@ -31,6 +70,7 @@ export type StoredRiotAccount = {
   createdAt: string;
   updatedAt: string;
   profileSnapshot?: ProfileSnapshot;
+  storeSnapshot?: StoreSnapshot;
 };
 
 export type StoredAuthTokens = {

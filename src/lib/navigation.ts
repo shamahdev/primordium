@@ -6,7 +6,7 @@ export type LoginMode = 'add' | 'reauth';
 
 export type SwitchReason = 'choose' | 'reauthFailed' | 'afterRemoval';
 
-export type ReturnToRoute = '/profile' | `/onboarding?shard=${ValorantShard}`;
+export type ReturnToRoute = '/home' | '/profile' | `/onboarding?shard=${ValorantShard}`;
 
 const ONBOARDING_RETURN_TO_PREFIX = '/onboarding?shard=';
 
@@ -15,6 +15,10 @@ export function buildOnboardingReturnTo(shard: ValorantShard): ReturnToRoute {
 }
 
 export function sanitizeReturnToRoute(returnTo?: string): ReturnToRoute {
+  if (returnTo === '/home') {
+    return '/home';
+  }
+
   if (returnTo === '/profile') {
     return '/profile';
   }
@@ -31,6 +35,10 @@ export function sanitizeReturnToRoute(returnTo?: string): ReturnToRoute {
 
 export function getReturnToHref(returnTo?: string): Href {
   const route = sanitizeReturnToRoute(returnTo);
+  if (route === '/home') {
+    return '/home';
+  }
+
   if (route === '/profile') {
     return '/profile';
   }
