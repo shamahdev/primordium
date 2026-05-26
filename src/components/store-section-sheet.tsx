@@ -1,81 +1,75 @@
+import { BottomSheetBackdrop, BottomSheetFlatList, BottomSheetModal, type BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import React from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, View } from 'react-native';
 
 import { StoreItemCard } from '@/components/store-item-card';
 import { StoreResetTimer } from '@/components/store-reset-timer';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { StoreCarouselCard } from '@/lib/account';
 
 type StoreSectionSheetProps = {
   section: StoreCarouselCard | null;
-  visible: boolean;
-  onClose: () => void;
+  onDismiss: () => void;
+  onBeforeNavigate?: () => void;
 };
 
-export function StoreSectionSheet({ section, visible, onClose }: StoreSectionSheetProps) {
-  const theme = useTheme();
+export const StoreSectionSheet = React.forwardRef<BottomSheetModal, StoreSectionSheetProps>(
+  function StoreSectionSheet({ section, onDismiss, onBeforeNavigate }, ref) {
+    const theme = useTheme();
 
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <ThemedView style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={onClose} />
-        <SafeAreaView edges={['bottom']} style={[styles.sheet, { backgroundColor: theme.background }]}> 
-          <ThemedView style={[styles.handle, { backgroundColor: theme.textSecondary }]} />
-          {section ? (
-            <>
-              <ThemedText type="subtitle">{section.title}</ThemedText>
-              <ThemedText themeColor="textSecondary">{section.subtitle}</ThemedText>
-              <StoreResetTimer expiresAt={section.expiresAt} />
-              <FlatList
-                data={section.items}
-                keyExtractor={(item) => item.id}
-                numColumns={2}
-                contentContainerStyle={styles.content}
-                columnWrapperStyle={styles.gridRow}
-                renderItem={({ item }) => (
-                  <View style={styles.gridItem}>
-                    <StoreItemCard item={item} />
-                  </View>
-                )}
-                showsVerticalScrollIndicator={false}
-              />
-            </>
-          ) : null}
-        </SafeAreaView>
-      </ThemedView>
-    </Modal>
-  );
-}
+    const renderBackdrop = React.useCallback(
+      (props: BottomSheetBackdropProps) => (
+        <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} pressBehavior="close" />
+      ),
+      [],
+    );
+
+    return (
+      <BottomSheetModal
+        ref={ref}
+        snapPoints={['82%']}
+        enableDynamicSizing={false}
+        enablePanDownToClose
+        backdropComponent={renderBackdrop}
+        onDismiss={onDismiss}
+        backgroundStyle={{ backgroundColor: theme.background }}
+        handleIndicatorStyle={{ backgroundColor: theme.textSecondary, opacity: 0.4 }}
+      >
+        {section ? (
+          <View style={styles.header}>
+            <ThemedText type="subtitle">{section.title}</ThemedText>
+            <ThemedText themeColor="textSecondary">{section.subtitle}</ThemedText>
+            <StoreResetTimer expiresAt={section.expiresAt} />
+          </View>
+        ) : null}
+        <BottomSheetFlatList
+          data={section?.items ?? []}
+          keyExtractor={(item) => item.id}
+          numColumns={2}
+          contentContainerStyle={styles.content}
+          columnWrapperStyle={styles.gridRow}
+          renderItem={({ item }) => (
+            <View style={styles.gridItem}>
+              <StoreItemCard item={item} onBeforeNavigate={onBeforeNavigate} />
+            </View>
+          )}
+          showsVerticalScrollIndicator={false}
+        />
+      </BottomSheetModal>
+    );
+  },
+);
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.45)',
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  sheet: {
-    maxHeight: '82%',
-    borderTopLeftRadius: Spacing.four,
-    borderTopRightRadius: Spacing.four,
-    padding: Spacing.four,
+  header: {
+    paddingHorizontal: Spacing.four,
     gap: Spacing.one,
-  },
-  handle: {
-    width: 42,
-    height: 4,
-    borderRadius: 2,
-    alignSelf: 'center',
-    opacity: 0.4,
-    marginBottom: Spacing.two,
+    paddingBottom: Spacing.two,
   },
   content: {
+    paddingHorizontal: Spacing.four,
     paddingTop: Spacing.three,
     paddingBottom: Spacing.four,
     gap: Spacing.three,

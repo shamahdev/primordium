@@ -1,7 +1,35 @@
 type StoreAsset = {
   title: string;
   imageUrl?: string;
+  largeImageUrl?: string;
+  wideImageUrl?: string;
+  animationUrl?: string;
   rarity?: 'select' | 'deluxe' | 'premium' | 'exclusive' | 'ultra';
+};
+
+export type SkinDetailChroma = {
+  uuid: string;
+  displayName: string;
+  displayIcon?: string;
+  fullRender?: string;
+  swatch?: string;
+};
+
+export type SkinDetailLevel = {
+  uuid: string;
+  displayName: string;
+  displayIcon?: string;
+  streamedVideo?: string;
+  levelItem?: string;
+};
+
+export type SkinDetailAsset = {
+  uuid: string;
+  title: string;
+  displayIcon?: string;
+  rarity?: StoreAsset['rarity'];
+  chromas: SkinDetailChroma[];
+  levels: SkinDetailLevel[];
 };
 
 type BundleAsset = {
@@ -18,12 +46,18 @@ type SkinAsset = {
   contentTierUuid?: string | null;
   displayIcon?: string | null;
   chromas: {
+    uuid: string;
+    displayName: string;
     displayIcon?: string | null;
     fullRender?: string | null;
+    swatch?: string | null;
   }[];
   levels: {
     uuid: string;
+    displayName: string;
     displayIcon?: string | null;
+    streamedVideo?: string | null;
+    levelItem?: string | null;
   }[];
 };
 
@@ -51,6 +85,7 @@ type SprayAsset = {
   displayIcon?: string | null;
   fullIcon?: string | null;
   fullTransparentIcon?: string | null;
+  animationGif?: string | null;
 };
 
 type ValorantApiResponse<T> = {
@@ -60,7 +95,7 @@ type ValorantApiResponse<T> = {
 const VALORANT_PUBLIC_API_ROOT = 'https://valorant-api.com/v1';
 
 let bundleAssetsPromise: Promise<Map<string, StoreAsset>> | null = null;
-let itemAssetsPromise: Promise<Map<string, StoreAsset>> | null = null;
+let itemAssetsPromise: Promise<{ items: Map<string, StoreAsset>; skinDetails: Map<string, SkinDetailAsset> }> | null = null;
 
 const CONTENT_TIER_TO_RARITY: Record<string, StoreAsset['rarity']> = {
   '12683d76-48d7-84a3-4e09-6985794f0445': 'select',
@@ -76,8 +111,13 @@ export async function getBundleAsset(bundleId: string) {
 }
 
 export async function getStoreItemAsset(itemId: string) {
-  const assets = await getItemAssets();
-  return assets.get(itemId);
+  const { items } = await getItemAssets();
+  return items.get(itemId);
+}
+
+export async function getSkinDetailAsset(itemId: string) {
+  const { skinDetails } = await getItemAssets();
+  return skinDetails.get(itemId);
 }
 
 async function getBundleAssets() {
@@ -119,7 +159,8 @@ async function loadItemAssets() {
     fetchCatalog<BundleAsset>('flex'),
   ]);
 
-  const assets = new Map<string, StoreAsset>();
+  const items = new Map<string, StoreAsset>();
+  const skinDetails = new Map<string, SkinDetailAsset>();
 
   for (const skin of skins) {
     const imageUrl =
@@ -129,42 +170,71 @@ async function loadItemAssets() {
       skin.levels[0]?.displayIcon ??
       undefined;
     const rarity = skin.contentTierUuid ? CONTENT_TIER_TO_RARITY[skin.contentTierUuid] : undefined;
-    assets.set(skin.uuid, { title: skin.displayName, imageUrl, rarity });
+    items.set(skin.uuid, { title: skin.displayName, imageUrl, rarity });
     for (const level of skin.levels) {
-      assets.set(level.uuid, { title: skin.displayName, imageUrl: level.displayIcon ?? imageUrl, rarity });
+      items.set(level.uuid, { title: skin.displayName, imageUrl: level.displayIcon ?? imageUrl, rarity });
+    }
+
+    const detail: SkinDetailAsset = {
+      uuid: skin.uuid,
+      title: skin.displayName,
+      displayIcon: skin.displayIcon ?? undefined,
+      rarity,
+      chromas: skin.chromas.map((c) => ({
+        uuid: c.uuid,
+        displayName: c.displayName,
+        displayIcon: c.displayIcon ?? undefined,
+        fullRender: c.fullRender ?? undefined,
+        swatch: c.swatch ?? undefined,
+      })),
+      levels: skin.levels.map((l) => ({
+        uuid: l.uuid,
+        displayName: l.displayName,
+        displayIcon: l.displayIcon ?? undefined,
+        streamedVideo: l.streamedVideo ?? undefined,
+        levelItem: l.levelItem ?? undefined,
+      })),
+    };
+    skinDetails.set(skin.uuid, detail);
+    for (const level of skin.levels) {
+      skinDetails.set(level.uuid, detail);
     }
   }
 
   for (const buddy of buddies) {
     const imageUrl = buddy.displayIcon ?? buddy.levels[0]?.displayIcon ?? undefined;
-    assets.set(buddy.uuid, { title: buddy.displayName, imageUrl });
+    items.set(buddy.uuid, { title: buddy.displayName, imageUrl });
     for (const level of buddy.levels) {
-      assets.set(level.uuid, { title: buddy.displayName, imageUrl: level.displayIcon ?? imageUrl });
+      items.set(level.uuid, { title: buddy.displayName, imageUrl: level.displayIcon ?? imageUrl });
     }
   }
 
   for (const playerCard of playerCards) {
-    assets.set(playerCard.uuid, {
+    items.set(playerCard.uuid, {
       title: playerCard.displayName,
-      imageUrl: playerCard.wideArt ?? playerCard.largeArt ?? playerCard.displayIcon ?? undefined,
+      imageUrl: playerCard.displayIcon ?? playerCard.wideArt ?? playerCard.largeArt ?? undefined,
+      wideImageUrl: playerCard.wideArt ?? undefined,
+      largeImageUrl: playerCard.largeArt ?? undefined,
     });
   }
 
   for (const spray of sprays) {
-    assets.set(spray.uuid, {
+    items.set(spray.uuid, {
       title: spray.displayName,
       imageUrl: spray.fullTransparentIcon ?? spray.fullIcon ?? spray.displayIcon ?? undefined,
+      largeImageUrl: spray.fullTransparentIcon ?? spray.fullIcon ?? undefined,
+      animationUrl: spray.animationGif ?? undefined,
     });
   }
 
   for (const flex of flexes) {
-    assets.set(flex.uuid, {
+    items.set(flex.uuid, {
       title: flex.displayName,
       imageUrl: flex.verticalPromoImage ?? flex.displayIcon2 ?? flex.displayIcon ?? undefined,
     });
   }
 
-  return assets;
+  return { items, skinDetails };
 }
 
 async function fetchCatalog<T>(path: string) {

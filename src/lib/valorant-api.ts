@@ -408,7 +408,6 @@ async function buildNightMarketCard(bonusStore: NonNullable<StorefrontResponse['
     id: 'night-market',
     title: 'Night Market',
     subtitle: `${items.length} offer${items.length === 1 ? '' : 's'}`,
-    imageUrl: require('@/assets/images/valorant/placeholder/night-market.png'),
     section: 'nightMarket' as const,
     expiresAt: getExpiresAt(bonusStore.BonusStoreRemainingDurationInSeconds),
     items,
@@ -434,6 +433,7 @@ async function buildStoreItem(params: {
     itemType: resolvedItemType,
     rarity: asset?.rarity,
     price: buildStorePrice(params.cost, params.originalAmount, params.discountPercent),
+    itemAssetId: params.reward?.ItemID,
   };
 }
 

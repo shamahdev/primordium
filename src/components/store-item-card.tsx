@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -10,14 +11,34 @@ import type { StoreItem } from '@/lib/account';
 
 type StoreItemCardProps = {
   item: StoreItem;
+  onBeforeNavigate?: () => void;
 };
 
-export function StoreItemCard({ item }: StoreItemCardProps) {
+const NON_TAPPABLE_TYPES: StoreItem['itemType'][] = ['title', 'unknown'];
+
+export function StoreItemCard({ item, onBeforeNavigate }: StoreItemCardProps) {
   const theme = useTheme();
   const currencyIcon = getCurrencyIcon(item.price.currency);
   const rarityIcon = item.rarity ? getRarityIcon(item.rarity) : null;
+  const isTappable = !NON_TAPPABLE_TYPES.includes(item.itemType) && !!item.itemAssetId;
 
-  return (
+  const handlePress = () => {
+    if (!isTappable) return;
+    onBeforeNavigate?.();
+    router.push({
+      pathname: '/store-item',
+      params: {
+        itemAssetId: item.itemAssetId!,
+        itemType: item.itemType,
+        title: item.title,
+        priceAmount: String(item.price.amount),
+        priceCurrency: item.price.currency,
+        ...(item.rarity ? { rarity: item.rarity } : {}),
+      },
+    });
+  };
+
+  const card = (
     <ThemedView type="backgroundElement" style={styles.card}>
       {rarityIcon ? <Image source={rarityIcon} contentFit="contain" style={styles.rarityIcon} /> : null}
       {item.imageUrl ? (
@@ -49,6 +70,14 @@ export function StoreItemCard({ item }: StoreItemCardProps) {
         ) : null}
       </View>
     </ThemedView>
+  );
+
+  if (!isTappable) return card;
+
+  return (
+    <Pressable onPress={handlePress} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
+      {card}
+    </Pressable>
   );
 }
 

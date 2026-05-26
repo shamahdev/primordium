@@ -38,6 +38,7 @@ export type StoreItem = {
   itemType: 'skin' | 'buddy' | 'spray' | 'card' | 'title' | 'flex' | 'unknown';
   rarity?: StoreItemRarity;
   price: StorePrice;
+  itemAssetId?: string;
 };
 
 export type StoreCarouselCard = {

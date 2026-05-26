@@ -1,3 +1,4 @@
+import { type BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Image } from 'expo-image';
 import { Redirect, router, useFocusEffect } from 'expo-router';
 import React from 'react';
@@ -32,6 +33,8 @@ export default function AuthenticatedHomeScreen() {
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [selectedSection, setSelectedSection] = React.useState<StoreCarouselCard | null>(null);
+  const sheetRef = React.useRef<BottomSheetModal>(null);
+  const navigatingFromSheet = React.useRef(false);
 
   const routeToAuthRecovery = React.useCallback((accountId: string) => {
     if (accounts.length > 1) {
@@ -83,6 +86,15 @@ export default function AuthenticatedHomeScreen() {
     React.useCallback(() => {
       void refreshStore();
     }, [refreshStore]),
+  );
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (navigatingFromSheet.current && selectedSection) {
+        navigatingFromSheet.current = false;
+        sheetRef.current?.present();
+      }
+    }, [selectedSection]),
   );
 
   if (!account) {
@@ -146,33 +158,38 @@ export default function AuthenticatedHomeScreen() {
           <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
             {carouselCards.length > 0 && (
               <ThemedView style={styles.section}>
-                <SectionHeading label="FEATURED" />
                 <FlatList
                   horizontal
                   data={carouselCards}
                   keyExtractor={(item) => item.id}
                   contentContainerStyle={styles.carousel}
-                  renderItem={({ item }) => (
-                    <Pressable
-                      onPress={() => setSelectedSection(item)}
-                      style={({ pressed }) => [
-                        styles.carouselCard,
-                        {
-                          width: Math.min(layout.width - Spacing.five * 3, 312),
-                          backgroundColor: theme.backgroundElement,
-                          opacity: pressed ? 0.92 : 1,
-                        },
-                      ]}>
-                      {item.imageUrl ? <Image source={item.imageUrl} contentFit="cover" style={styles.carouselImage} /> : null}
-                      <View style={styles.carouselOverlay}>
-                        <ThemedText type="smallBold">{item.title}</ThemedText>
-                        <ThemedText type="small" themeColor="textSecondary">
-                          {item.subtitle}
-                        </ThemedText>
-                        <StoreResetTimer expiresAt={item.expiresAt} />
-                      </View>
-                    </Pressable>
-                  )}
+                  renderItem={({ item }) => {
+                    const cardImage = item.imageUrl ?? getCarouselFallbackImage(item.section);
+                    return (
+                      <Pressable
+                        onPress={() => {
+                          setSelectedSection(item);
+                          sheetRef.current?.present();
+                        }}
+                        style={({ pressed }) => [
+                          styles.carouselCard,
+                          {
+                            width: Math.min(layout.width - Spacing.five * 3, 312),
+                            backgroundColor: theme.backgroundElement,
+                            opacity: pressed ? 0.92 : 1,
+                          },
+                        ]}>
+                        {cardImage ? <Image source={cardImage} contentFit="cover" style={styles.carouselImage} /> : null}
+                        <View style={styles.carouselOverlay}>
+                          <ThemedText type="smallBold">{item.title}</ThemedText>
+                          <ThemedText type="small" themeColor="textSecondary">
+                            {item.subtitle}
+                          </ThemedText>
+                          <StoreResetTimer expiresAt={item.expiresAt} />
+                        </View>
+                      </Pressable>
+                    );
+                  }}
                   showsHorizontalScrollIndicator={false}
                 />
               </ThemedView>
@@ -191,19 +208,19 @@ export default function AuthenticatedHomeScreen() {
         </SafeAreaView>
       </ThemedView>
       <StoreSectionSheet
-        visible={selectedSection !== null}
+        ref={sheetRef}
         section={selectedSection}
-        onClose={() => setSelectedSection(null)}
+        onDismiss={() => {
+          if (!navigatingFromSheet.current) {
+            setSelectedSection(null);
+          }
+        }}
+        onBeforeNavigate={() => {
+          navigatingFromSheet.current = true;
+          sheetRef.current?.dismiss();
+        }}
       />
     </>
-  );
-}
-
-function SectionHeading({ label }: { label: string }) {
-  return (
-    <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
-      {label}
-    </ThemedText>
   );
 }
 
@@ -232,6 +249,13 @@ function StoreGrid({ items }: { items: StoreItem[] }) {
       )}
     />
   );
+}
+
+function getCarouselFallbackImage(section: StoreCarouselCard['section']) {
+  if (section === 'nightMarket') {
+    return require('@/assets/images/valorant/placeholder/night-market.png');
+  }
+  return null;
 }
 
 const styles = StyleSheet.create({
@@ -292,7 +316,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   carouselImage: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   carouselOverlay: {
     padding: Spacing.three,
