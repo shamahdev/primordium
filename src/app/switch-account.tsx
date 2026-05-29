@@ -47,7 +47,7 @@ export default function SwitchAccountScreen() {
       }
       await ensureAccountSession(account);
       switchAccount(account.id);
-      router.replace('/profile');
+      router.replace('/home');
     } catch (selectionError) {
       if (isAuthRecoveryRequired(selectionError)) {
         if (selectionError.recoveryKind === 'interactiveLoginRequired') {

@@ -1,9 +1,9 @@
 import React from 'react';
 import { Pressable, StyleSheet, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
 
+import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { ThemedText } from '@/components/themed-text';
 
 type PrimaryButtonProps = Omit<PressableProps, 'style'> & {
   label: string;
@@ -32,7 +32,7 @@ export function PrimaryButton({ label, disabled, style, ...props }: PrimaryButto
 const styles = StyleSheet.create({
   button: {
     minHeight: 48,
-    borderRadius: Spacing.three,
+    borderRadius: Spacing.one,
     paddingHorizontal: Spacing.three,
     alignItems: 'center',
     justifyContent: 'center',

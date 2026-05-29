@@ -40,8 +40,8 @@ export const StoreSectionSheet = React.forwardRef<BottomSheetModal, StoreSection
         {section ? (
           <View style={styles.header}>
             <ThemedText type="subtitle">{section.title}</ThemedText>
-            <ThemedText themeColor="textSecondary">{section.subtitle}</ThemedText>
-            <StoreResetTimer expiresAt={section.expiresAt} />
+            <ThemedText >({section.subtitle})</ThemedText>
+            <StoreResetTimer expiresAt={section.expiresAt} prefix='Leave in' />
           </View>
         ) : null}
         <BottomSheetFlatList
@@ -65,20 +65,18 @@ export const StoreSectionSheet = React.forwardRef<BottomSheetModal, StoreSection
 const styles = StyleSheet.create({
   header: {
     paddingHorizontal: Spacing.four,
-    gap: Spacing.one,
     paddingBottom: Spacing.two,
   },
   content: {
     paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.three,
-    paddingBottom: Spacing.four,
-    gap: Spacing.three,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.two,
+    gap: Spacing.two,
   },
   gridRow: {
     justifyContent: 'space-between',
   },
   gridItem: {
-    width: '48%',
-    marginBottom: Spacing.three,
+    width: '49%',
   },
 });

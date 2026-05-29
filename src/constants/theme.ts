@@ -28,6 +28,14 @@ export const Colors = {
   },
 } as const;
 
+export const RarityColors = {
+  select: '#5A9FE2',
+  deluxe: '#009587',
+  premium: '#D1548D',
+  exclusive: '#F5955B',
+  ultra: '#FAD663',
+} as const;
+
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
 export const Fonts = Platform.select({

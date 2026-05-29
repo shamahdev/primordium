@@ -1,13 +1,13 @@
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Colors, RarityColors, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import type { StoreItem } from '@/lib/account';
+import type { StoreItem, StoreItemRarity } from '@/lib/account';
 
 type StoreItemCardProps = {
   item: StoreItem;
@@ -15,12 +15,15 @@ type StoreItemCardProps = {
 };
 
 const NON_TAPPABLE_TYPES: StoreItem['itemType'][] = ['title', 'unknown'];
+const ACCESSORY_TYPES: StoreItem['itemType'][] = ['buddy', 'spray', 'card', 'title', 'flex'];
 
 export function StoreItemCard({ item, onBeforeNavigate }: StoreItemCardProps) {
   const theme = useTheme();
   const currencyIcon = getCurrencyIcon(item.price.currency);
   const rarityIcon = item.rarity ? getRarityIcon(item.rarity) : null;
+  const rarityColor = item.rarity ? RarityColors[item.rarity] : null;
   const isTappable = !NON_TAPPABLE_TYPES.includes(item.itemType) && !!item.itemAssetId;
+  const isAccessory = ACCESSORY_TYPES.includes(item.itemType);
 
   const handlePress = () => {
     if (!isTappable) return;
@@ -39,37 +42,58 @@ export function StoreItemCard({ item, onBeforeNavigate }: StoreItemCardProps) {
   };
 
   const card = (
-    <ThemedView type="backgroundElement" style={styles.card}>
-      {rarityIcon ? <Image source={rarityIcon} contentFit="contain" style={styles.rarityIcon} /> : null}
+    <View style={styles.card}>
       {item.imageUrl ? (
-        <Image source={item.imageUrl} contentFit="contain" style={styles.image} />
+        <>
+          {rarityIcon && (
+            <Image source={rarityIcon} contentFit="contain" style={styles.rarityWatermark} />
+          )}
+          <Image source={item.imageUrl} contentFit="contain" style={styles.image} />
+        </>
       ) : (
-        <ThemedView type="backgroundSelected" style={styles.imageFallback}>
+        <View style={styles.fallbackBackground}>
           <ThemedText type="smallBold" themeColor="textSecondary">
             {item.itemType.toUpperCase()}
           </ThemedText>
-        </ThemedView>
-      )}
-      <View style={styles.textBlock}>
-        <ThemedText numberOfLines={2} style={styles.title}>
-          {item.title}
-        </ThemedText>
-        <View style={styles.priceRow}>
-          {item.price.originalAmount ? (
-            <ThemedText type="small" themeColor="textSecondary" style={styles.originalPrice}>
-              {item.price.originalAmount.toLocaleString()}
-            </ThemedText>
-          ) : null}
-          <ThemedText type="smallBold">{item.price.amount.toLocaleString()}</ThemedText>
-          {currencyIcon ? <Image source={currencyIcon} contentFit="contain" style={styles.currencyIcon} /> : null}
         </View>
-        {item.price.discountPercent ? (
-          <ThemedText type="small" style={{ color: theme.primary }}>
+      )}
+
+      {rarityColor && (
+        <LinearGradient
+          colors={['transparent', `${rarityColor}99`]}
+          locations={[0.4, 1]}
+          style={styles.gradientOverlay}
+        />
+      )}
+
+      {item.price.discountPercent && (
+        <View style={[styles.discountBadge, { backgroundColor: theme.primary }]}>
+          <ThemedText type="xsmall" style={styles.discountText}>
             -{item.price.discountPercent}%
           </ThemedText>
-        ) : null}
+        </View>
+      )}
+
+      {isAccessory && (
+        <View style={styles.accessoryBadge}>
+          <ThemedText type="xsmall" style={styles.accessoryBadgeText}>
+            {item.itemType.toUpperCase()}
+          </ThemedText>
+        </View>
+      )}
+
+      <View style={styles.textOverlay}>
+        <ThemedText type="smallBold" style={styles.title} numberOfLines={1}>
+          {item.title.toUpperCase()}
+        </ThemedText>
+        <View style={styles.priceRow}>
+          {currencyIcon && <Image source={currencyIcon} contentFit="contain" style={styles.currencyIcon} />}
+          <ThemedText type="xsmall" style={styles.price}>
+            {item.price.amount.toLocaleString()}
+          </ThemedText>
+        </View>
       </View>
-    </ThemedView>
+    </View>
   );
 
   if (!isTappable) return card;
@@ -93,7 +117,7 @@ function getCurrencyIcon(currency: StoreItem['price']['currency']) {
   return null;
 }
 
-function getRarityIcon(rarity: NonNullable<StoreItem['rarity']>) {
+function getRarityIcon(rarity: StoreItemRarity) {
   const icons = {
     select: require('@/assets/images/valorant/skin-rarity/select.png'),
     deluxe: require('@/assets/images/valorant/skin-rarity/deluxe.png'),
@@ -108,48 +132,88 @@ function getRarityIcon(rarity: NonNullable<StoreItem['rarity']>) {
 const styles = StyleSheet.create({
   card: {
     width: '100%',
-    borderRadius: Spacing.four,
-    padding: Spacing.two,
-    gap: Spacing.two,
+    aspectRatio: 3 / 4,
+    borderRadius: Spacing.one,
     overflow: 'hidden',
+    backgroundColor: Colors.dark.backgroundElement,
   },
   image: {
+    ...StyleSheet.absoluteFill,
+    paddingHorizontal: Spacing.two,
     width: '100%',
-    height: 96,
+    height: '100%',
+    zIndex: 1,
   },
-  imageFallback: {
+  rarityWatermark: {
+    ...StyleSheet.absoluteFill,
     width: '100%',
-    height: 96,
-    borderRadius: Spacing.three,
+    height: '100%',
+    alignSelf: 'center',
+    opacity: 0.1,
+    tintColor: '#ffffff',
+  },
+  fallbackBackground: {
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  textBlock: {
-    gap: Spacing.half,
-    backgroundColor: 'transparent',
+  gradientOverlay: {
+    ...StyleSheet.absoluteFill,
+    width: '100%',
+    height: '100%',
+  },
+  textOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.two,
+    zIndex: 2,
+    gap: 2,
   },
   title: {
-    minHeight: 48,
+    color: '#ffffff',
+    fontWeight: '700',
   },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
     gap: Spacing.one,
   },
+  price: {
+    color: '#ffffff',
+    fontWeight: '700',
+  },
   currencyIcon: {
-    width: 14,
-    height: 14,
+    width: 16,
+    height: 16,
   },
-  originalPrice: {
-    textDecorationLine: 'line-through',
-  },
-  rarityIcon: {
+  discountBadge: {
     position: 'absolute',
-    top: Spacing.two,
-    right: Spacing.two,
-    width: 18,
-    height: 18,
-    zIndex: 1,
+    top: Spacing.one,
+    left: Spacing.one,
+    paddingHorizontal: Spacing.one + 2,
+    paddingVertical: 2,
+    borderRadius: Spacing.half,
+    zIndex: 2,
+  },
+  discountText: {
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+  accessoryBadge: {
+    position: 'absolute',
+    top: Spacing.one,
+    right: Spacing.one,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: Spacing.one + 2,
+    paddingVertical: 2,
+    borderRadius: Spacing.half,
+    zIndex: 2,
+  },
+  accessoryBadgeText: {
+    color: '#ffffff',
   },
 });

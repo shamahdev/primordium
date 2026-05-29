@@ -4408,7 +4408,7 @@ export default function CurrencyIcon(props: props) {
               props.icon === "vp"
                 ? require("~/assets/images/vp.png")
                 : (props.icon === "rad"
-                    ? require("~/assets/images/rad.png")
+                    ? require("~/assets/images/radianite.png")
                     : require("~/assets/images/kc.png")
                   )
             }
@@ -4422,7 +4422,7 @@ export default function CurrencyIcon(props: props) {
             props.icon === "vp"
                 ? require("~/assets/images/vp.png")
                 : (props.icon === "rad"
-                        ? require("~/assets/images/rad.png")
+                        ? require("~/assets/images/radianite.png")
                         : require("~/assets/images/kc.png")
                 )
           }

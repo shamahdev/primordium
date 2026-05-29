@@ -1,5 +1,6 @@
+import { router } from 'expo-router';
 import React from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -21,11 +22,15 @@ export function TabHeader() {
   return (
     <ThemedView style={styles.outer}>
       <View style={styles.inner}>
-        <View style={styles.identity}>
-          <ThemedText type="smallBold" numberOfLines={1}>
-            {getAccountLabel(account)}
-          </ThemedText>
-        </View>
+        <Pressable
+          onPress={() => router.push('/switch-account')}
+          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}>
+          <View style={styles.identity}>
+            <ThemedText type="smallBold" numberOfLines={1}>
+              {getAccountLabel(account)}
+            </ThemedText>
+          </View>
+        </Pressable>
         <View style={styles.balances}>
           <BalancePill icon={require('@/assets/images/valorant/vp.png')} value={balances?.vp} />
           <BalancePill icon={require('@/assets/images/valorant/radianite.png')} value={balances?.radianite} />

@@ -20,7 +20,7 @@ export default function OnboardingScreen() {
   const [selectedShard, setSelectedShard] = React.useState<ValorantShard>(initialShard);
 
   const startLogin = () => {
-    router.push(getLoginHref({ mode: 'add', shard: selectedShard, returnTo: '/profile' }));
+    router.push(getLoginHref({ mode: 'add', shard: selectedShard, returnTo: '/home' }));
   };
 
   const switchAccount = () => {
@@ -60,11 +60,6 @@ export default function OnboardingScreen() {
                       type="smallBold"
                       style={{ color: selected ? theme.primaryForeground : theme.text }}>
                       {shard.label}
-                    </ThemedText>
-                    <ThemedText
-                      type="code"
-                      style={{ color: selected ? theme.primaryForeground : theme.textSecondary }}>
-                      {shard.id.toUpperCase()}
                     </ThemedText>
                   </Pressable>
                 );
@@ -133,7 +128,7 @@ const styles = StyleSheet.create({
   card: {
     gap: Spacing.two,
     padding: Spacing.three,
-    borderRadius: Spacing.four,
+    borderRadius: Spacing.one,
   },
   section: {
     gap: Spacing.three,
@@ -146,7 +141,7 @@ const styles = StyleSheet.create({
     minWidth: 130,
     flex: 1,
     borderWidth: 1,
-    borderRadius: Spacing.three,
+    borderRadius: Spacing.one,
     padding: Spacing.three,
     gap: Spacing.one,
   },

@@ -16,7 +16,7 @@ export function StoreResetTimer({ expiresAt, prefix = 'Reset in' }: StoreResetTi
   }, []);
 
   return (
-    <ThemedText type="small" themeColor="textSecondary">
+    <ThemedText type="xsmall" themeColor="textSecondary">
       {prefix} {formatRemaining(expiresAt, now)}
     </ThemedText>
   );
@@ -25,9 +25,17 @@ export function StoreResetTimer({ expiresAt, prefix = 'Reset in' }: StoreResetTi
 function formatRemaining(expiresAt: string, now: number) {
   const diff = Math.max(new Date(expiresAt).getTime() - now, 0);
   const totalSeconds = Math.floor(diff / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
+  const totalMinutes = Math.floor(totalSeconds / 60);
+  const totalHours = Math.floor(totalMinutes / 60);
+  const days = Math.floor(totalHours / 24);
+  const hours = totalHours % 24;
+  const minutes = totalMinutes % 60;
 
-  return [hours, minutes, seconds].map((value) => String(value).padStart(2, '0')).join(':');
+  if (days > 0) {
+    return `${days}d ${hours}h ${minutes}m`;
+  }
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  return `${minutes}m`;
 }

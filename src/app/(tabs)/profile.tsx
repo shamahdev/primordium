@@ -120,7 +120,7 @@ export default function ProfileScreen() {
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <ThemedView type="backgroundElement" style={styles.section}>
             <ThemedView type="backgroundElement" style={styles.sectionHeader}>
-              <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
+              <ThemedText type="small" themeColor="textSecondary" style={styles.sectionTitle}>
                 PROGRESS
               </ThemedText>
               {refreshing && <ActivityIndicator />}
@@ -145,7 +145,7 @@ export default function ProfileScreen() {
           </ThemedView> */}
 
           <ThemedView type="backgroundElement" style={styles.section}>
-            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.sectionTitle}>
               ACCOUNT
             </ThemedText>
             <MenuButton label="Switch Account" onPress={switchAccount} />
@@ -161,7 +161,7 @@ export default function ProfileScreen() {
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <ThemedView type="backgroundElement" style={styles.row}>
-      <ThemedText>{label}</ThemedText>
+      <ThemedText type="small">{label}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary" style={styles.rowValue} numberOfLines={1}>
         {value}
       </ThemedText>
@@ -173,7 +173,7 @@ function MenuButton({ label, destructive, onPress }: { label: string; destructiv
   const theme = useTheme();
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.menuButton, pressed && styles.pressed]}>
-      <ThemedText style={destructive ? { color: theme.primary } : undefined}>{label}</ThemedText>
+      <ThemedText type='small' style={destructive ? { color: theme.primary } : undefined}>{label}</ThemedText>
     </Pressable>
   );
 }
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   section: {
-    borderRadius: Spacing.four,
+    borderRadius: Spacing.one,
     padding: Spacing.three,
     gap: Spacing.two,
   },

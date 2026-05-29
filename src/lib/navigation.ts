@@ -30,7 +30,7 @@ export function sanitizeReturnToRoute(returnTo?: string): ReturnToRoute {
     }
   }
 
-  return '/profile';
+  return '/home';
 }
 
 export function getReturnToHref(returnTo?: string): Href {

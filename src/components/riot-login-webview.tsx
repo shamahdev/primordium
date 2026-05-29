@@ -151,13 +151,13 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: Spacing.four,
+    borderRadius: Spacing.one,
     gap: Spacing.two,
   },
   webViewShell: {
     flex: 1,
     overflow: 'hidden',
-    borderRadius: Spacing.four,
+    borderRadius: Spacing.one,
   },
   webView: {
     flex: 1,
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   errorCard: {
     padding: Spacing.three,
     gap: Spacing.two,
-    borderRadius: Spacing.four,
+    borderRadius: Spacing.one,
   },
   cancel: {
     alignItems: 'center',
