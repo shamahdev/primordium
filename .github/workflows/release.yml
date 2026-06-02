@@ -119,34 +119,35 @@ jobs:
 
       # ── 4. Build release body with QR codes ────────────────────
       - name: Build release body
-        run: node -e '
-          const fs = require("fs");
-          const v  = "${{ steps.bump.outputs.version }}";
-          const repo = "${{ github.repository }}";
-          const srv  = "${{ github.server_url }}";
-          const sha  = "${{ github.sha }}";
-          const plat = "${{ inputs.platform }}";
-          const apk  = "${{ steps.artifacts.outputs.apk }}";
-          const ipa  = "${{ steps.artifacts.outputs.ipa }}";
-          const base = `https://github.com/${repo}/releases/download/v${v}`;
-          const qr   = (url) =>
-            `![QR Code](https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)})`;
+        run: |
+          node -e '
+            const fs = require("fs");
+            const v  = "${{ steps.bump.outputs.version }}";
+            const repo = "${{ github.repository }}";
+            const srv  = "${{ github.server_url }}";
+            const sha  = "${{ github.sha }}";
+            const plat = "${{ inputs.platform }}";
+            const apk  = "${{ steps.artifacts.outputs.apk }}";
+            const ipa  = "${{ steps.artifacts.outputs.ipa }}";
+            const base = `https://github.com/${repo}/releases/download/v${v}`;
+            const qr   = (url) =>
+              `![QR Code](https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)})`;
 
-          let body = `## Primordium v${v}\n\n`;
-          body += `**Platform:** \`${plat}\`\n`;
-          body += `**Commit:** [${sha}](${srv}/${repo}/commit/${sha})\n`;
+            let body = `## Primordium v${v}\n\n`;
+            body += `**Platform:** \`${plat}\`\n`;
+            body += `**Commit:** [${sha}](${srv}/${repo}/commit/${sha})\n`;
 
-          if (apk) {
-            const url = `${base}/${apk}`;
-            body += `\n### Android\n\n${qr(url)}\n\n[${apk}](${url})\n`;
-          }
-          if (ipa) {
-            const url = `${base}/${ipa}`;
-            body += `\n### iOS\n\n${qr(url)}\n\n[${ipa}](${url})\n`;
-          }
+            if (apk) {
+              const url = `${base}/${apk}`;
+              body += `\n### Android\n\n${qr(url)}\n\n[${apk}](${url})\n`;
+            }
+            if (ipa) {
+              const url = `${base}/${ipa}`;
+              body += `\n### iOS\n\n${qr(url)}\n\n[${ipa}](${url})\n`;
+            }
 
-          fs.writeFileSync("/tmp/release-body.md", body);
-        '
+            fs.writeFileSync("/tmp/release-body.md", body);
+          '
 
       # ── 5. Create release with artifacts ────────────────────────
       - name: Create Release
