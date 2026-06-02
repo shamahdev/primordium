@@ -1,0 +1,164 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        default: 'patch'
+        options:
+          - patch
+          - minor
+          - major
+      platform:
+        description: 'Build platform'
+        required: true
+        type: choice
+        default: 'android'
+        options:
+          - android
+          - ios
+          - all
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # ── 1. Bump version ──────────────────────────────────────────
+      - name: Bump version
+        id: bump
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          npm version ${{ inputs.bump }} --no-git-tag-version
+
+          VERSION=$(node -p "require('./package.json').version")
+
+          # Mirror the version into app.json so expo-constants picks it up at runtime
+          node -e "
+            const fs = require('fs');
+            const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+            app.expo.version = '$VERSION';
+            fs.writeFileSync('app.json', JSON.stringify(app, null, 2) + '\n');
+          "
+
+          git add package.json package-lock.json app.json
+          git commit -m "chore: bump version to $VERSION"
+          git tag "v$VERSION"
+          git push origin HEAD
+          git push origin "v$VERSION"
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      # ── 2. Build ─────────────────────────────────────────────────
+      # Cloud builds on EAS infrastructure — no local Android SDK /
+      # Xcode needed on the runner.
+      #
+      # To switch to a local Android build (faster, uses runner
+      # minutes instead of EAS credits), add `android-actions/setup-
+      # android` above and replace the command with:
+      #   npx eas build --platform android --profile production \
+      #     --non-interactive --local --output=./app-release.apk
+
+      - name: Build Android (EAS)
+        if: inputs.platform == 'android' || inputs.platform == 'all'
+        run: |
+          npx eas build \
+            --platform android \
+            --profile production \
+            --non-interactive \
+            --wait
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build iOS (EAS)
+        if: inputs.platform == 'ios' || inputs.platform == 'all'
+        run: |
+          npx eas build \
+            --platform ios \
+            --profile production \
+            --non-interactive \
+            --wait
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      # ── 3. Find built artifacts ────────────────────────────────
+      - name: Locate artifacts
+        id: artifacts
+        run: |
+          APK=$(find . -maxdepth 1 -name '*.apk' -type f -printf '%f\n' | head -1)
+          IPA=$(find . -maxdepth 1 -name '*.ipa' -type f -printf '%f\n' | head -1)
+          echo "apk=${APK}" >> "$GITHUB_OUTPUT"
+          echo "ipa=${IPA}" >> "$GITHUB_OUTPUT"
+
+      # ── 4. Build release body with QR codes ────────────────────
+      - name: Build release body
+        run: node -e '
+          const fs = require("fs");
+          const v  = "${{ steps.bump.outputs.version }}";
+          const repo = "${{ github.repository }}";
+          const srv  = "${{ github.server_url }}";
+          const sha  = "${{ github.sha }}";
+          const plat = "${{ inputs.platform }}";
+          const apk  = "${{ steps.artifacts.outputs.apk }}";
+          const ipa  = "${{ steps.artifacts.outputs.ipa }}";
+          const base = `https://github.com/${repo}/releases/download/v${v}`;
+          const qr   = (url) =>
+            `![QR Code](https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)})`;
+
+          let body = `## Primordium v${v}\n\n`;
+          body += `**Platform:** \`${plat}\`\n`;
+          body += `**Commit:** [${sha}](${srv}/${repo}/commit/${sha})\n`;
+
+          if (apk) {
+            const url = `${base}/${apk}`;
+            body += `\n### Android\n\n${qr(url)}\n\n[${apk}](${url})\n`;
+          }
+          if (ipa) {
+            const url = `${base}/${ipa}`;
+            body += `\n### iOS\n\n${qr(url)}\n\n[${ipa}](${url})\n`;
+          }
+
+          fs.writeFileSync("/tmp/release-body.md", body);
+        '
+
+      # ── 5. Create release with artifacts ────────────────────────
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.bump.outputs.version }}
+          name: v${{ steps.bump.outputs.version }}
+          body_path: /tmp/release-body.md
+          files: |
+            *.apk
+            *.ipa
+          prerelease: ${{ inputs.prerelease }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
