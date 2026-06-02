@@ -11,7 +11,7 @@ export const Colors = {
   light: {
     text: '#000000',
     textSecondary: '#60646C',
-    primary: '#D32936',
+    primary: '#E6112E',
     primaryForeground: '#ffffff',
     background: '#ffffff',
     backgroundElement: '#F0F0F3',
@@ -19,7 +19,7 @@ export const Colors = {
   },
   dark: {
     text: '#ffffff',
-    primary: '#D32936',
+    primary: '#E6112E',
     primaryForeground: '#ffffff',
     textSecondary: '#B0B4BA',
     background: '#000000',

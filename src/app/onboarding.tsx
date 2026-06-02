@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/primary-button';
 import { ThemedText } from '@/components/themed-text';
@@ -18,6 +18,7 @@ export default function OnboardingScreen() {
   const accounts = useAccountStore((state) => state.accounts);
   const initialShard = VALORANT_SHARDS.some((shard) => shard.id === params.shard) ? (params.shard as ValorantShard) : 'eu';
   const [selectedShard, setSelectedShard] = React.useState<ValorantShard>(initialShard);
+  const insets = useSafeAreaInsets();
 
   const startLogin = () => {
     router.push(getLoginHref({ mode: 'add', shard: selectedShard, returnTo: '/home' }));
@@ -29,8 +30,11 @@ export default function OnboardingScreen() {
 
   return (
     <ThemedView style={styles.screen}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.safeArea}
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={[styles.content, { paddingTop: insets.top }]}
+        showsVerticalScrollIndicator={false}>
           <ThemedView style={styles.hero}>
             <ThemedText type="title" style={styles.title}>
               Primordium
@@ -94,7 +98,6 @@ export default function OnboardingScreen() {
           </ThemedView>
 
         </ScrollView>
-      </SafeAreaView>
     </ThemedView>
   );
 }

@@ -60,11 +60,20 @@ export function RiotLoginWebView({ shard, onCancel, onAuthenticated }: RiotLogin
       } catch {
         cookieCaptureFailed = true;
       }
+      let authError: unknown;
       try {
         await onAuthenticated({ ...result, cookies, cookieCaptureFailed });
-      } finally {
-        await clearRiotCookies();
+      } catch (error) {
+        authError = error;
       }
+      if (authError) {
+        await clearRiotCookies();
+        handledRedirectRef.current = false;
+        setLoading('');
+        setError(getLoginErrorMessage(authError));
+        return;
+      }
+      await clearRiotCookies();
     } catch (loginError) {
       handledRedirectRef.current = false;
       setLoading('');

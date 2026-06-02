@@ -1,7 +1,6 @@
-import { Redirect, router } from 'expo-router';
+import { Redirect, router, useFocusEffect } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ErrorBanner } from '@/components/error-banner';
 import { ThemedText } from '@/components/themed-text';
@@ -18,6 +17,10 @@ import {
 import { fetchProfileSnapshot } from '@/lib/valorant-api';
 import { useAccountStore } from '@/stores/account-store';
 
+function switchAccount() {
+  router.push(getSwitchAccountHref({ reason: 'choose', returnTo: '/profile' }));
+}
+
 export default function ProfileScreen() {
   const activeAccountId = useAccountStore((state) => state.activeAccountId);
   const account = useAccountStore((state) =>
@@ -30,15 +33,15 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  const routeToAuthRecovery = React.useCallback((accountId: string) => {
+  const routeToAuthRecovery = (accountId: string) => {
     if (accounts.length > 1) {
       router.replace(getSwitchAccountHref({ reason: 'reauthFailed', accountId, returnTo: '/profile' }));
       return;
     }
     router.replace(getLoginHref({ mode: 'reauth', accountId, returnTo: '/profile' }));
-  }, [accounts.length]);
+  };
 
-  const refreshProfile = React.useCallback(async () => {
+  const refreshProfile = async () => {
     const currentAccount = useAccountStore.getState().accounts.find((item) => item.id === activeAccountId);
     if (!currentAccount || currentAccount.status === 'needsReauth') {
       return;
@@ -49,6 +52,7 @@ export default function ProfileScreen() {
     try {
       const snapshot = await fetchProfileSnapshot(currentAccount);
       setProfileSnapshot(currentAccount.id, snapshot);
+      setRefreshing(false);
     } catch (refreshError) {
       if (isAuthRecoveryRequired(refreshError)) {
         if (refreshError.recoveryKind === 'temporaryAuthUnavailable') {
@@ -59,14 +63,13 @@ export default function ProfileScreen() {
       } else {
         setError(refreshError instanceof Error ? refreshError.message : 'Could not refresh profile.');
       }
-    } finally {
       setRefreshing(false);
     }
-  }, [activeAccountId, routeToAuthRecovery, setProfileSnapshot]);
+  };
 
-  React.useEffect(() => {
+  useFocusEffect(() => {
     void refreshProfile();
-  }, [accountStatus, activeAccountId, refreshProfile]);
+  });
 
   if (!account) {
     return <Redirect href="/" />;
@@ -98,27 +101,26 @@ export default function ProfileScreen() {
     router.push(getLoginHref({ mode: 'reauth', accountId: account.id, returnTo: '/profile' }));
   };
 
-  const switchAccount = () => {
-    router.push(getSwitchAccountHref({ reason: 'choose', returnTo: '/profile' }));
-  };
-
   return (
     <ThemedView style={styles.screen}>
-      <SafeAreaView edges={['left', 'right']} style={styles.safeArea}>
-        {account.status === 'needsReauth' && (
-          <ErrorBanner
-            message="Session expired. Sign in again to refresh profile."
-            actionLabel="Sign in"
-            onPress={reauthenticate}
-          />
-        )}
+      {account.status === 'needsReauth' && (
+        <ErrorBanner
+          message="Session expired. Sign in again to refresh profile."
+          actionLabel="Sign in"
+          onPress={reauthenticate}
+        />
+      )}
 
-        {error && account.status !== 'needsReauth' && (
-          <ErrorBanner message={error} actionLabel="Retry" onPress={refreshProfile} />
-        )}
+      {error && account.status !== 'needsReauth' && (
+        <ErrorBanner message={error} actionLabel="Retry" onPress={refreshProfile} />
+      )}
 
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <ThemedView type="backgroundElement" style={styles.section}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+      >
+        <ThemedView type="backgroundElement" style={styles.section}>
             <ThemedView type="backgroundElement" style={styles.sectionHeader}>
               <ThemedText type="small" themeColor="textSecondary" style={styles.sectionTitle}>
                 PROGRESS
@@ -152,7 +154,6 @@ export default function ProfileScreen() {
             <MenuButton label="Logout" destructive onPress={confirmLogout} />
           </ThemedView>
         </ScrollView>
-      </SafeAreaView>
     </ThemedView>
   );
 
@@ -183,14 +184,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
-  safeArea: {
-    flex: 1,
-    width: '100%',
-    maxWidth: MaxContentWidth,
-  },
   content: {
     padding: Spacing.four,
     gap: Spacing.three,
+    maxWidth: MaxContentWidth,
   },
   section: {
     borderRadius: Spacing.one,

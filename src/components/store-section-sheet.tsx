@@ -13,22 +13,21 @@ type StoreSectionSheetProps = {
   section: StoreCarouselCard | null;
   onDismiss: () => void;
   onBeforeNavigate?: () => void;
+  ref?: React.Ref<BottomSheetModal>;
 };
 
-export const StoreSectionSheet = React.forwardRef<BottomSheetModal, StoreSectionSheetProps>(
-  function StoreSectionSheet({ section, onDismiss, onBeforeNavigate }, ref) {
-    const theme = useTheme();
+function renderBackdrop(props: BottomSheetBackdropProps) {
+  return (
+    <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} pressBehavior="close" />
+  );
+}
 
-    const renderBackdrop = React.useCallback(
-      (props: BottomSheetBackdropProps) => (
-        <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} pressBehavior="close" />
-      ),
-      [],
-    );
+export function StoreSectionSheet({ section, onDismiss, onBeforeNavigate, ref }: StoreSectionSheetProps) {
+  const theme = useTheme();
 
-    return (
-      <BottomSheetModal
-        ref={ref}
+  return (
+    <BottomSheetModal
+      ref={ref}
         snapPoints={['82%']}
         enableDynamicSizing={false}
         enablePanDownToClose
@@ -59,8 +58,7 @@ export const StoreSectionSheet = React.forwardRef<BottomSheetModal, StoreSection
         />
       </BottomSheetModal>
     );
-  },
-);
+}
 
 const styles = StyleSheet.create({
   header: {

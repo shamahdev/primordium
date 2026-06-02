@@ -18,6 +18,14 @@ export function RiotSessionRefreshWebView() {
   const jobRef = React.useRef<SessionRefreshJob | null>(null);
   const nextJobId = React.useRef(0);
 
+  const finishJob = (currentJob: SessionRefreshJob, result: RiotSessionRefreshWebViewResult) => {
+    if (jobRef.current?.id !== currentJob.id) {
+      return;
+    }
+    setJob(null);
+    currentJob.resolve(result);
+  };
+
   React.useEffect(() => {
     return registerRiotSessionRefreshWebView(({ sourceUri }) =>
       new Promise<RiotSessionRefreshWebViewResult>((resolve) => {
@@ -85,14 +93,6 @@ export function RiotSessionRefreshWebView() {
       style={styles.hiddenWebView}
     />
   );
-
-  function finishJob(currentJob: SessionRefreshJob, result: RiotSessionRefreshWebViewResult) {
-    if (jobRef.current?.id !== currentJob.id) {
-      return;
-    }
-    setJob(null);
-    currentJob.resolve(result);
-  }
 }
 
 const styles = StyleSheet.create({

@@ -17,6 +17,19 @@ import {
 } from '@/lib/navigation';
 import { useAccountStore } from '@/stores/account-store';
 
+async function confirmDifferentRegion(account: StoredRiotAccount) {
+  return new Promise<boolean>((resolve) => {
+    Alert.alert(
+      'Add another Region?',
+      `${getAccountLabel(account)} is already saved for another Region. Add it for ${account.shard.toUpperCase()} too?`,
+      [
+        { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+        { text: 'Add Region', onPress: () => resolve(true) },
+      ],
+    );
+  });
+}
+
 export default function LoginScreen() {
   const params = useLocalSearchParams<{ mode?: LoginMode; shard?: string; accountId?: string; returnTo?: string }>();
   const accounts = useAccountStore((state) => state.accounts);
@@ -25,7 +38,7 @@ export default function LoginScreen() {
   const reauthAccount = accounts.find((account) => account.id === params.accountId);
   const shard = mode === 'reauth' ? reauthAccount?.shard : isValorantShard(params.shard) ? params.shard : undefined;
   const returnTo = sanitizeReturnToRoute(params.returnTo);
-  const [webViewKey, setWebViewKey] = React.useState(0);
+  const webViewKey = React.useRef(0);
 
   React.useEffect(() => {
     if (!shard || (mode === 'reauth' && !reauthAccount)) {
@@ -63,34 +76,13 @@ export default function LoginScreen() {
     if (mode === 'add' && accounts.some((account) => account.puuid === result.account.puuid && account.shard !== result.account.shard)) {
       const confirmed = await confirmDifferentRegion(result.account);
       if (!confirmed) {
-        setWebViewKey((value) => value + 1);
+        webViewKey.current += 1;
         return;
       }
     }
 
     await saveAndContinue(result);
   };
-
-  return (
-    <ThemedView style={styles.screen}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.header}>
-          <ThemedText type="subtitle">Riot Login</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            {mode === 'reauth' && reauthAccount
-              ? `Sign in again as ${getAccountLabel(reauthAccount)} · Region ${shard.toUpperCase()}`
-              : `Region: ${shard.toUpperCase()}`}
-          </ThemedText>
-        </ThemedView>
-        <RiotLoginWebView
-          key={webViewKey}
-          shard={shard as ValorantShard}
-          onCancel={cancel}
-          onAuthenticated={handleAuthenticated}
-        />
-      </SafeAreaView>
-    </ThemedView>
-  );
 
   async function saveAndContinue(result: {
     account: StoredRiotAccount;
@@ -122,7 +114,7 @@ export default function LoginScreen() {
         {
           text: 'Try again',
           onPress: () => {
-            setWebViewKey((value) => value + 1);
+            webViewKey.current += 1;
             resolve();
           },
         },
@@ -131,18 +123,6 @@ export default function LoginScreen() {
     });
   }
 
-  async function confirmDifferentRegion(account: StoredRiotAccount) {
-    return new Promise<boolean>((resolve) => {
-      Alert.alert(
-        'Add another Region?',
-        `${getAccountLabel(account)} is already saved for another Region. Add it for ${account.shard.toUpperCase()} too?`,
-        [
-          { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-          { text: 'Add Region', onPress: () => resolve(true) },
-        ],
-      );
-    });
-  }
 }
 
 const styles = StyleSheet.create({

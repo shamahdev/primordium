@@ -2,8 +2,7 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import React from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -68,9 +67,9 @@ function SkinDetailView({ params }: { params: StoreItemParams }) {
   if (loading) {
     return (
       <ThemedView style={styles.screen}>
-        <SafeAreaView style={[styles.safeArea, styles.centered]}>
+        <View style={[styles.safeArea, styles.centered]}>
           <ActivityIndicator />
-        </SafeAreaView>
+        </View>
       </ThemedView>
     );
   }
@@ -78,143 +77,160 @@ function SkinDetailView({ params }: { params: StoreItemParams }) {
   if (!skinDetail) {
     return (
       <ThemedView style={styles.screen}>
-        <SafeAreaView style={styles.safeArea}>
+        <View style={styles.safeArea}>
           <Header title={params.title} />
           <View style={styles.centered}>
             <ThemedText themeColor="textSecondary">Skin detail unavailable</ThemedText>
           </View>
-        </SafeAreaView>
+        </View>
       </ThemedView>
     );
   }
 
+  const renderChromaItem = ({ item: chroma, index }: { item: SkinDetailChroma; index: number }) => (
+    <Pressable
+      onPress={() => handleChromaSelect(index)}
+      style={[
+        styles.chromaSwatch,
+        { borderColor: index === selectedChromaIndex ? theme.primary : theme.backgroundSelected },
+      ]}
+    >
+      {chroma.swatch ? (
+        <Image source={chroma.swatch} contentFit="cover" style={styles.chromaSwatchImage} />
+      ) : (
+        <ThemedView type="backgroundElement" style={styles.chromaSwatchImage} />
+      )}
+    </Pressable>
+  );
+
   return (
     <ThemedView style={styles.screen}>
-      <SafeAreaView style={styles.safeArea}>
-        <Header title={params.title} />
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <View style={styles.heroContainer}>
-            {activeVideoUrl ? (
-              <SkinVideoPlayer url={activeVideoUrl} onDismiss={() => setActiveVideoUrl(null)} />
-            ) : heroImageUrl ? (
-              <Image source={heroImageUrl} contentFit="contain" style={styles.heroImage} />
-            ) : (
-              <ThemedView type="backgroundElement" style={[styles.heroImage, styles.heroFallback]}>
-                <ThemedText themeColor="textSecondary">No preview</ThemedText>
-              </ThemedView>
-            )}
-          </View>
-
-          <View style={styles.titleRow}>
-            <View style={styles.titleBlock}>
-              <ThemedText type="subtitle" numberOfLines={2}>{skinDetail.title}</ThemedText>
-              <PriceDisplay amount={params.priceAmount} currency={params.priceCurrency} rarity={params.rarity as StoreItemRarity | undefined} />
-            </View>
-          </View>
-
-          {skinDetail.chromas.length > 1 && (
-            <View style={styles.section}>
-              <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>CHROMAS</ThemedText>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chromaRow}>
-                {skinDetail.chromas.map((chroma, index) => (
-                  <Pressable
-                    key={chroma.uuid}
-                    onPress={() => handleChromaSelect(index)}
-                    style={[
-                      styles.chromaSwatch,
-                      {
-                        borderColor: index === selectedChromaIndex ? theme.primary : theme.backgroundSelected,
-                      },
-                    ]}
-                  >
-                    {chroma.swatch ? (
-                      <Image source={chroma.swatch} contentFit="cover" style={styles.chromaSwatchImage} />
-                    ) : (
-                      <ThemedView type="backgroundElement" style={styles.chromaSwatchImage} />
-                    )}
-                  </Pressable>
-                ))}
-              </ScrollView>
-            </View>
+      <Header title={params.title} />
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+      >
+        <View style={styles.heroContainer}>
+          {activeVideoUrl ? (
+            <SkinVideoPlayer url={activeVideoUrl} onDismiss={() => setActiveVideoUrl(null)} />
+          ) : heroImageUrl ? (
+            <Image source={heroImageUrl} contentFit="contain" style={styles.heroImage} />
+          ) : (
+            <ThemedView type="backgroundElement" style={[styles.heroImage, styles.heroFallback]}>
+              <ThemedText themeColor="textSecondary">No preview</ThemedText>
+            </ThemedView>
           )}
+        </View>
 
-          {skinDetail.levels.length > 1 && (
-            <View style={styles.section}>
-              <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>LEVELS</ThemedText>
-              <View style={styles.levelsList}>
-                {skinDetail.levels.map((level, index) => (
-                  <LevelRow
-                    key={level.uuid}
-                    level={level}
-                    index={index}
-                    isActive={activeVideoUrl === level.streamedVideo}
-                    onPlay={() => handleLevelPlay(level)}
-                  />
-                ))}
-              </View>
+        <View style={styles.titleRow}>
+          <View style={styles.titleBlock}>
+            <ThemedText type="subtitle" numberOfLines={2}>{skinDetail.title}</ThemedText>
+            <PriceDisplay amount={params.priceAmount} currency={params.priceCurrency} rarity={params.rarity as StoreItemRarity | undefined} />
+          </View>
+        </View>
+
+        {skinDetail.chromas.length > 1 && (
+          <View style={styles.section}>
+            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>CHROMAS</ThemedText>
+            <FlatList
+              horizontal
+              data={skinDetail.chromas}
+              keyExtractor={(chroma) => chroma.uuid}
+              contentContainerStyle={styles.chromaRow}
+              showsHorizontalScrollIndicator={false}
+              renderItem={renderChromaItem}
+            />
+          </View>
+        )}
+
+        {skinDetail.levels.length > 1 && (
+          <View style={styles.section}>
+            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>LEVELS</ThemedText>
+            <View style={styles.levelsList}>
+              {skinDetail.levels.map((level, index) => (
+                <LevelRow
+                  key={level.uuid}
+                  level={level}
+                  index={index}
+                  isActive={activeVideoUrl === level.streamedVideo}
+                  onPlay={() => handleLevelPlay(level)}
+                />
+              ))}
             </View>
-          )}
-        </ScrollView>
-      </SafeAreaView>
+          </View>
+        )}
+      </ScrollView>
     </ThemedView>
   );
 }
 
+type DetailState = {
+  imageUrl?: string;
+  largeImageUrl?: string;
+  wideImageUrl?: string;
+  animationUrl?: string;
+  loading: boolean;
+};
+
 function SimpleDetailView({ params }: { params: StoreItemParams }) {
-  const [imageUrl, setImageUrl] = React.useState<string | undefined>(undefined);
-  const [largeImageUrl, setLargeImageUrl] = React.useState<string | undefined>(undefined);
-  const [wideImageUrl, setWideImageUrl] = React.useState<string | undefined>(undefined);
-  const [animationUrl, setAnimationUrl] = React.useState<string | undefined>(undefined);
-  const [loading, setLoading] = React.useState(true);
+  const [state, setState] = React.useReducer(
+    (prev: DetailState, next: Partial<DetailState>) => ({ ...prev, ...next }),
+    { loading: true },
+  );
 
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
       const asset = await getStoreItemAsset(params.itemAssetId);
       if (!cancelled) {
-        setImageUrl(asset?.imageUrl);
-        setLargeImageUrl(asset?.largeImageUrl);
-        setWideImageUrl(asset?.wideImageUrl);
-        setAnimationUrl(asset?.animationUrl);
-        setLoading(false);
+        setState({
+          imageUrl: asset?.imageUrl,
+          largeImageUrl: asset?.largeImageUrl,
+          wideImageUrl: asset?.wideImageUrl,
+          animationUrl: asset?.animationUrl,
+          loading: false,
+        });
       }
     })();
     return () => { cancelled = true; };
   }, [params.itemAssetId]);
 
   const isCard = params.itemType === 'card';
-  const heroSource = animationUrl ?? largeImageUrl ?? imageUrl;
+  const heroSource = state.animationUrl ?? state.largeImageUrl ?? state.imageUrl;
 
   return (
     <ThemedView style={styles.screen}>
-      <SafeAreaView style={styles.safeArea}>
-        <Header title={params.title} />
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          {loading ? (
-            <View style={styles.heroContainer}>
-              <ActivityIndicator />
-            </View>
-          ) : isCard && imageUrl && wideImageUrl && largeImageUrl ? (
-            <CardArtGrid displayIcon={imageUrl} wideArt={wideImageUrl} largeArt={largeImageUrl} />
-          ) : heroSource ? (
-            <View style={styles.heroContainer}>
-              <Image source={heroSource} contentFit="contain" style={styles.heroImage} autoplay={true} />
-            </View>
-          ) : (
-            <View style={styles.heroContainer}>
-              <ThemedView type="backgroundElement" style={[styles.heroImage, styles.heroFallback]}>
-                <ThemedText themeColor="textSecondary">No preview</ThemedText>
-              </ThemedView>
-            </View>
-          )}
-          <View style={styles.titleRow}>
-            <View style={styles.titleBlock}>
-              <ThemedText type="subtitle" numberOfLines={2}>{params.title}</ThemedText>
-              <PriceDisplay amount={params.priceAmount} currency={params.priceCurrency} rarity={params.rarity as StoreItemRarity | undefined} />
-            </View>
+      <Header title={params.title} />
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+      >
+        {state.loading ? (
+          <View style={styles.heroContainer}>
+            <ActivityIndicator />
           </View>
-        </ScrollView>
-      </SafeAreaView>
+        ) : isCard && state.imageUrl && state.wideImageUrl && state.largeImageUrl ? (
+          <CardArtGrid displayIcon={state.imageUrl} wideArt={state.wideImageUrl} largeArt={state.largeImageUrl} />
+        ) : heroSource ? (
+          <View style={styles.heroContainer}>
+            <Image source={heroSource} contentFit="contain" style={styles.heroImage} autoplay={true} />
+          </View>
+        ) : (
+          <View style={styles.heroContainer}>
+            <ThemedView type="backgroundElement" style={[styles.heroImage, styles.heroFallback]}>
+              <ThemedText themeColor="textSecondary">No preview</ThemedText>
+            </ThemedView>
+          </View>
+        )}
+        <View style={styles.titleRow}>
+          <View style={styles.titleBlock}>
+            <ThemedText type="subtitle" numberOfLines={2}>{params.title}</ThemedText>
+            <PriceDisplay amount={params.priceAmount} currency={params.priceCurrency} rarity={params.rarity as StoreItemRarity | undefined} />
+          </View>
+        </View>
+      </ScrollView>
     </ThemedView>
   );
 }

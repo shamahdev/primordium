@@ -27,10 +27,14 @@ export async function clearRiotCookies() {
 }
 
 export async function captureRiotAuthCookies() {
+  const results = await Promise.all(
+    RIOT_AUTH_COOKIE_URLS.map(async (url) => {
+      const hostname = new URL(url).hostname;
+      return { hostname, jars: await getCookieJars(url) };
+    }),
+  );
   const cookies = new Map<string, StoredRiotCookie>();
-  for (const url of RIOT_AUTH_COOKIE_URLS) {
-    const hostname = new URL(url).hostname;
-    const jars = await getCookieJars(url);
+  for (const { hostname, jars } of results) {
     for (const jar of jars) {
       for (const [fallbackName, cookie] of Object.entries(jar)) {
         const normalized = normalizeCookie(cookie, fallbackName, hostname);
@@ -45,12 +49,13 @@ export async function captureRiotAuthCookies() {
 }
 
 export async function injectRiotAuthCookies(cookies: StoredRiotCookie[]) {
+  const tasks: Promise<void>[] = [];
   for (const cookie of cookies) {
-    if (!isRiotAuthDomain(cookie.domain)) {
-      continue;
+    if (isRiotAuthDomain(cookie.domain)) {
+      tasks.push(setCookie(getCookieUrl(cookie), cookie));
     }
-    await setCookie(getCookieUrl(cookie), cookie);
   }
+  await Promise.all(tasks);
   if (Platform.OS === 'android') {
     await CookieManager.flush();
   }

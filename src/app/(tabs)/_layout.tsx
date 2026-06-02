@@ -1,8 +1,9 @@
 import { MaterialTopTabNavigationEventMap, MaterialTopTabNavigationOptions, createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { ParamListBase, TabNavigationState } from '@react-navigation/native';
+import { Image } from 'expo-image';
 import { withLayoutContext } from 'expo-router';
 import React from 'react';
-import { Image, StyleSheet, useColorScheme, useWindowDimensions } from 'react-native';
+import { StyleSheet, useColorScheme, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TabHeader } from '@/components/tab-header';
@@ -51,7 +52,8 @@ export default function AuthenticatedTabsLayout() {
             tabBarIcon: ({ color }) => (
               <Image
                 source={require('@/assets/images/tabIcons/home.png')}
-                style={[styles.icon, { tintColor: color }]}
+                style={styles.icon}
+                tintColor={color}
               />
             ),
           }}
@@ -63,7 +65,8 @@ export default function AuthenticatedTabsLayout() {
             tabBarIcon: ({ color }) => (
               <Image
                 source={require('@/assets/images/tabIcons/explore.png')}
-                style={[styles.icon, { tintColor: color }]}
+                style={styles.icon}
+                tintColor={color}
               />
             ),
           }}

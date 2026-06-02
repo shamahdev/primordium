@@ -366,18 +366,20 @@ async function getPlayerName(accessToken: string, entitlementsToken: string, puu
 }
 
 async function buildFeaturedBundleCard(featuredBundle: StorefrontResponse['FeaturedBundle']): Promise<StoreCarouselCard> {
-  const bundleAsset = await getBundleAsset(featuredBundle.Bundle.DataAssetID || featuredBundle.Bundle.ID);
-  const items = await Promise.all(
-    featuredBundle.Bundle.Items.map((item, index) =>
-      buildStoreItem({
-        id: `${featuredBundle.Bundle.ID}.${index}`,
-        reward: { ItemID: item.Item.ItemID, ItemTypeID: item.Item.ItemTypeID, Quantity: item.Item.Amount },
-        cost: { [item.CurrencyID]: item.DiscountedPrice },
-        originalAmount: item.BasePrice,
-        discountPercent: item.DiscountPercent,
-      }),
+  const [bundleAsset, items] = await Promise.all([
+    getBundleAsset(featuredBundle.Bundle.DataAssetID || featuredBundle.Bundle.ID),
+    Promise.all(
+      featuredBundle.Bundle.Items.map((item, index) =>
+        buildStoreItem({
+          id: `${featuredBundle.Bundle.ID}.${index}`,
+          reward: { ItemID: item.Item.ItemID, ItemTypeID: item.Item.ItemTypeID, Quantity: item.Item.Amount },
+          cost: { [item.CurrencyID]: item.DiscountedPrice },
+          originalAmount: item.BasePrice,
+          discountPercent: item.DiscountPercent,
+        }),
+      ),
     ),
-  );
+  ]);
 
   return {
     id: featuredBundle.Bundle.ID,

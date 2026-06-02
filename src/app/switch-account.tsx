@@ -1,7 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ErrorBanner } from '@/components/error-banner';
 import { PrimaryButton } from '@/components/primary-button';
@@ -20,6 +19,10 @@ import {
 } from '@/lib/navigation';
 import { ensureAccountSession } from '@/lib/valorant-api';
 import { useAccountStore } from '@/stores/account-store';
+
+function addAccount() {
+  router.push(getOnboardingHref());
+}
 
 export default function SwitchAccountScreen() {
   const params = useLocalSearchParams<{ returnTo?: string; reason?: SwitchReason; accountId?: string }>();
@@ -43,22 +46,24 @@ export default function SwitchAccountScreen() {
     try {
       if (account.status === 'needsReauth') {
         routeToReauth(account.id);
+        setBusyAccountId(null);
         return;
       }
       await ensureAccountSession(account);
       switchAccount(account.id);
+      setBusyAccountId(null);
       router.replace('/home');
     } catch (selectionError) {
       if (isAuthRecoveryRequired(selectionError)) {
         if (selectionError.recoveryKind === 'interactiveLoginRequired') {
           routeToReauth(account.id);
+          setBusyAccountId(null);
           return;
         }
         setError(selectionError.message);
       } else {
         setError(selectionError instanceof Error ? selectionError.message : 'Could not switch account.');
       }
-    } finally {
       setBusyAccountId(null);
     }
   };
@@ -67,24 +72,27 @@ export default function SwitchAccountScreen() {
     router.replace(getReturnToHref(returnTo));
   };
 
-  const addAccount = () => {
-    router.push(getOnboardingHref());
+  const routeToReauth = (accountId: string) => {
+    router.replace(getLoginHref({ mode: 'reauth', accountId, returnTo }));
   };
 
   return (
     <ThemedView style={styles.screen}>
-      <SafeAreaView style={styles.safeArea}>
-        {params.reason === 'reauthFailed' && failedAccount && (
-          <ErrorBanner
-            message={`Sign in again as ${getAccountLabel(failedAccount)}.`}
-            actionLabel="Sign in"
-            onPress={() => routeToReauth(failedAccount.id)}
-          />
-        )}
+      {params.reason === 'reauthFailed' && failedAccount && (
+        <ErrorBanner
+          message={`Sign in again as ${getAccountLabel(failedAccount)}.`}
+          actionLabel="Sign in"
+          onPress={() => routeToReauth(failedAccount.id)}
+        />
+      )}
 
-        {error && <ErrorBanner message={error} />}
+      {error && <ErrorBanner message={error} />}
 
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+      >
           <ThemedView style={styles.header}>
             <ThemedText type="title">Switch Account</ThemedText>
             <ThemedText themeColor="textSecondary">{getReasonCopy(params.reason)}</ThemedText>
@@ -106,7 +114,7 @@ export default function SwitchAccountScreen() {
                       opacity: pressed ? 0.75 : busyAccountId ? 0.55 : 1,
                     },
                   ]}>
-                  <ThemedView style={[styles.accountAvatar, { backgroundColor: theme.primary }]}> 
+                  <ThemedView style={[styles.accountAvatar, { backgroundColor: theme.primary }]}>
                     <ThemedText type="smallBold" style={{ color: theme.primaryForeground }}>
                       {account.gameName.slice(0, 2).toUpperCase()}
                     </ThemedText>
@@ -128,13 +136,8 @@ export default function SwitchAccountScreen() {
             <ThemedText type="small" themeColor="textSecondary">Cancel</ThemedText>
           </Pressable>
         </ScrollView>
-      </SafeAreaView>
     </ThemedView>
   );
-
-  function routeToReauth(accountId: string) {
-    router.replace(getLoginHref({ mode: 'reauth', accountId, returnTo }));
-  }
 }
 
 function getReasonCopy(reason?: SwitchReason) {
@@ -152,14 +155,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
-  safeArea: {
-    flex: 1,
-    width: '100%',
-    maxWidth: MaxContentWidth,
-  },
   content: {
     padding: Spacing.four,
     gap: Spacing.three,
+    maxWidth: MaxContentWidth,
   },
   header: {
     gap: Spacing.two,

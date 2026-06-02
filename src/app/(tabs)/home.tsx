@@ -12,8 +12,6 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { ErrorBanner } from '@/components/error-banner';
 import { PrimaryButton } from '@/components/primary-button';
 import { StoreItemCard } from '@/components/store-item-card';
@@ -46,18 +44,15 @@ export default function AuthenticatedHomeScreen() {
   const sheetRef = React.useRef<BottomSheetModal>(null);
   const navigatingFromSheet = React.useRef(false);
 
-  const routeToAuthRecovery = React.useCallback(
-    (accountId: string) => {
-      if (accounts.length > 1) {
-        router.replace(getSwitchAccountHref({ reason: 'reauthFailed', accountId, returnTo: '/home' }));
-        return;
-      }
-      router.replace(getLoginHref({ mode: 'reauth', accountId, returnTo: '/home' }));
-    },
-    [accounts.length],
-  );
+  const routeToAuthRecovery = (accountId: string) => {
+    if (accounts.length > 1) {
+      router.replace(getSwitchAccountHref({ reason: 'reauthFailed', accountId, returnTo: '/home' }));
+      return;
+    }
+    router.replace(getLoginHref({ mode: 'reauth', accountId, returnTo: '/home' }));
+  };
 
-  const refreshStore = React.useCallback(async () => {
+  const refreshStore = async () => {
     const currentAccount = useAccountStore.getState().accounts.find(
       (item) => item.id === activeAccountId,
     );
@@ -95,6 +90,7 @@ export default function AuthenticatedHomeScreen() {
           });
         }
       }
+      setRefreshing(false);
     } catch (refreshError) {
       log.store.error('fetchStoreSnapshot FAILED', {
         name: refreshError instanceof Error ? refreshError.name : typeof refreshError,
@@ -112,25 +108,20 @@ export default function AuthenticatedHomeScreen() {
       } else {
         setError(refreshError instanceof Error ? refreshError.message : 'Could not refresh store.');
       }
-    } finally {
       setRefreshing(false);
     }
-  }, [activeAccountId, routeToAuthRecovery, setProfileSnapshot, setStoreSnapshot]);
+  };
 
-  useFocusEffect(
-    React.useCallback(() => {
-      void refreshStore();
-    }, [refreshStore]),
-  );
+  useFocusEffect(() => {
+    void refreshStore();
+  });
 
-  useFocusEffect(
-    React.useCallback(() => {
-      if (navigatingFromSheet.current && selectedSection) {
-        navigatingFromSheet.current = false;
-        sheetRef.current?.present();
-      }
-    }, [selectedSection]),
-  );
+  useFocusEffect(() => {
+    if (navigatingFromSheet.current && selectedSection) {
+      navigatingFromSheet.current = false;
+      sheetRef.current?.present();
+    }
+  });
   if (!account) {
     return <Redirect href="/" />;
   }
@@ -141,13 +132,27 @@ export default function AuthenticatedHomeScreen() {
     return left.section === 'nightMarket' ? -1 : 1;
   });
 
+  const handleBundleCardPress = (card: StoreCarouselCard) => {
+    setSelectedSection(card);
+    sheetRef.current?.present();
+  };
+
+  const carouselItemWidth = bundleCardWidth(windowWidth);
+  const carouselItemStyle = { width: carouselItemWidth };
+
+  const renderBundleCardItem = ({ item }: { item: StoreCarouselCard }) => (
+    <View style={carouselItemStyle}>
+      <BundleCarouselCard card={item} onPress={handleBundleCardPress} />
+    </View>
+  );
+
   if (!snapshot && refreshing) {
     return (
       <ThemedView style={styles.screen}>
-        <SafeAreaView edges={['left', 'right']} style={[styles.safeArea, styles.centered]}>
+        <View style={[styles.safeArea, styles.centered]}>
           <ActivityIndicator />
-          <ThemedText themeColor="textSecondary">Loading current store...</ThemedText>
-        </SafeAreaView>
+          <ThemedText themeColor="textSecondary">Loading current store\u2026</ThemedText>
+        </View>
       </ThemedView>
     );
   }
@@ -155,7 +160,7 @@ export default function AuthenticatedHomeScreen() {
   if (!snapshot) {
     return (
       <ThemedView style={styles.screen}>
-        <SafeAreaView edges={['left', 'right']} style={styles.safeArea}>
+        <View style={styles.safeArea}>
           <ErrorBanner
             message={error ?? 'We could not load the current store yet.'}
             actionLabel="Retry"
@@ -165,7 +170,7 @@ export default function AuthenticatedHomeScreen() {
             <ThemedText type="smallBold">Store unavailable</ThemedText>
             <PrimaryButton label="Retry" onPress={refreshStore} disabled={refreshing} />
           </View>
-        </SafeAreaView>
+        </View>
       </ThemedView>
     );
   }
@@ -173,24 +178,24 @@ export default function AuthenticatedHomeScreen() {
   return (
     <>
       <ThemedView style={styles.screen}>
-        <SafeAreaView edges={['left', 'right']} style={styles.safeArea}>
-          {account.status === 'needsReauth' && (
-            <ErrorBanner
-              message="Session expired. Sign in again to refresh store."
-              actionLabel="Sign in"
-              onPress={() =>
-                router.push(getLoginHref({ mode: 'reauth', accountId: account.id, returnTo: '/home' }))
-              }
-            />
-          )}
+        {account.status === 'needsReauth' && (
+          <ErrorBanner
+            message="Session expired. Sign in again to refresh store."
+            actionLabel="Sign in"
+            onPress={() =>
+              router.push(getLoginHref({ mode: 'reauth', accountId: account.id, returnTo: '/home' }))
+            }
+          />
+        )}
 
-          {error && account.status !== 'needsReauth' && (
-            <ErrorBanner message={error} actionLabel="Retry" onPress={refreshStore} />
-          )}
+        {error && account.status !== 'needsReauth' && (
+          <ErrorBanner message={error} actionLabel="Retry" onPress={refreshStore} />
+        )}
 
-          <ScrollView
-            contentContainerStyle={styles.content}
-            showsVerticalScrollIndicator={false}
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          contentInsetAdjustmentBehavior="automatic"
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -208,17 +213,7 @@ export default function AuthenticatedHomeScreen() {
                   contentContainerStyle={styles.carouselContent}
                   snapToInterval={bundleCardWidth(windowWidth) + Spacing.two}
                   decelerationRate="fast"
-                  renderItem={({ item }) => (
-                    <View style={{ width: bundleCardWidth(windowWidth) }}>
-                      <BundleCarouselCard
-                        card={item}
-                        onPress={(card) => {
-                          setSelectedSection(card);
-                          sheetRef.current?.present();
-                        }}
-                      />
-                    </View>
-                  )}
+                  renderItem={renderBundleCardItem}
                   showsHorizontalScrollIndicator={false}
                   ItemSeparatorComponent={() => <View style={{ width: Spacing.two }} />}
                 />
@@ -243,7 +238,6 @@ export default function AuthenticatedHomeScreen() {
 
 
           </ScrollView>
-        </SafeAreaView>
       </ThemedView>
       <StoreSectionSheet
         ref={sheetRef}
@@ -271,6 +265,14 @@ function SectionLabel({ title, expiresAt }: { title: string; expiresAt?: string 
   );
 }
 
+function renderStoreItem({ item }: { item: StoreItem }) {
+  return (
+    <View style={styles.gridItem}>
+      <StoreItemCard item={item} />
+    </View>
+  );
+}
+
 function StoreGrid({ items }: { items: StoreItem[] }) {
   return (
     <FlatList
@@ -280,11 +282,7 @@ function StoreGrid({ items }: { items: StoreItem[] }) {
       scrollEnabled={false}
       contentContainerStyle={styles.gridList}
       columnWrapperStyle={styles.gridRow}
-      renderItem={({ item }) => (
-        <View style={styles.gridItem}>
-          <StoreItemCard item={item} />
-        </View>
-      )}
+      renderItem={renderStoreItem}
     />
   );
 }
