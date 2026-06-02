@@ -74,7 +74,6 @@
     "eslint": "^9.0.0",
     "eslint-config-expo": "~55.0.1",
     "react-doctor": "^0.2.16",
-    "react-native-svg-transformer": "^1.5.3",
     "typescript": "~5.9.2"
   }
 }

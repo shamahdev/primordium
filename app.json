@@ -13,12 +13,6 @@
     },
     "scheme": "primordium",
     "userInterfaceStyle": "automatic",
-    "build": {
-      "development": {
-        "developmentClient": true,
-        "distribution": "internal"
-      }
-    },
     "ios": {
       "bundleIdentifier": "dev.shamah.primordium"
     },
