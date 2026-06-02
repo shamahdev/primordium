@@ -4,25 +4,16 @@ on:
   workflow_dispatch:
     inputs:
       bump:
-        description: 'Version bump type'
+        description: "Version bump type"
         required: true
         type: choice
-        default: 'patch'
+        default: "patch"
         options:
           - patch
           - minor
           - major
-      platform:
-        description: 'Build platform'
-        required: true
-        type: choice
-        default: 'android'
-        options:
-          - android
-          - ios
-          - all
       prerelease:
-        description: 'Mark as pre-release'
+        description: "Mark as pre-release"
         required: false
         type: boolean
         default: false
@@ -34,30 +25,100 @@ jobs:
   release:
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    env:
+      NODE_OPTIONS: --openssl-legacy-provider
 
     steps:
-      - uses: actions/checkout@v5
+      - name: 🏗 Checkout repository
+        uses: actions/checkout@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
-      - uses: actions/setup-node@v5
+      - name: 🏗 Setup Node.js
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
-      - name: Install dependencies
-        run: npm ci
+      - name: 📦 Get npm cache directory path
+        id: npm-cache-dir-path
+        run: echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
 
-      # ── 1. Bump version ──────────────────────────────────────────
-      - name: Bump version
+      - name: 📦 Setup npm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.npm-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: 📦 Install dependencies
+        run: |
+          npm install
+          npm install -g eas-cli@latest
+          eas --version
+
+      - name: 📋 Fix package.json main entry
+        run: |
+          # Check if jq is installed, if not install it
+          if ! command -v jq &> /dev/null; then
+            echo "Installing jq..."
+            sudo apt-get update && sudo apt-get install -y jq
+          fi
+
+          # Fix the main entry in package.json
+          if [ -f ./package.json ]; then
+            # Create a backup
+            cp package.json package.json.bak
+            # Update the package.json
+            jq '.main = "node_modules/expo/AppEntry.js"' package.json > package.json.tmp && mv package.json.tmp package.json
+            echo "Updated package.json main entry"
+            cat package.json | grep "main"
+          else
+            echo "package.json not found"
+            exit 1
+          fi
+
+      - name: 📋 Update metro.config.js for SVG support
+        run: |
+          if [ -f ./metro.config.js ]; then
+            echo "Creating backup of metro.config.js"
+            cp ./metro.config.js ./metro.config.js.backup
+            echo "Updating metro.config.js to CommonJS format"
+            cat > ./metro.config.js << 'EOFMARKER'
+          /* eslint-disable @typescript-eslint/no-var-requires */
+          const { getDefaultConfig } = require('expo/metro-config');
+
+          const config = getDefaultConfig(__dirname);
+
+          const { transformer, resolver } = config;
+
+          config.transformer = {
+            ...transformer,
+            babelTransformerPath: require.resolve('react-native-svg-transformer/expo'),
+          };
+
+          config.resolver = {
+            ...resolver,
+            assetExts: resolver.assetExts.filter(ext => ext !== 'svg'),
+            sourceExts: [...resolver.sourceExts, 'svg'],
+          };
+
+          module.exports = config;
+          EOFMARKER
+            echo "metro.config.js updated to CommonJS format"
+          else
+            echo "metro.config.js not found"
+          fi
+
+      - name: 📋 Bump version
         id: bump
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           npm version ${{ inputs.bump }} --no-git-tag-version
-
           VERSION=$(node -p "require('./package.json').version")
 
           # Mirror the version into app.json so expo-constants picks it up at runtime
@@ -71,94 +132,50 @@ jobs:
           git add package.json package-lock.json app.json
           git commit -m "chore: bump version to $VERSION"
           git tag "v$VERSION"
-          git push origin HEAD
-          git push origin "v$VERSION"
-
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      # ── 2. Build ─────────────────────────────────────────────────
-      # Cloud builds on EAS infrastructure — no local Android SDK /
-      # Xcode needed on the runner.
-      #
-      # To switch to a local Android build (faster, uses runner
-      # minutes instead of EAS credits), add `android-actions/setup-
-      # android` above and replace the command with:
-      #   npx eas build --platform android --profile production \
-      #     --non-interactive --local --output=./app-release.apk
-
-      - name: Build Android (EAS)
-        if: inputs.platform == 'android' || inputs.platform == 'all'
+      - name: ⚙️ Build Android
         run: |
-          npx eas build \
+          export NODE_OPTIONS="--openssl-legacy-provider --max_old_space_size=4096"
+          eas build \
             --platform android \
             --profile production \
+            --local \
             --non-interactive \
-            --wait
+            --output=./app-prod.apk
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Build iOS (EAS)
-        if: inputs.platform == 'ios' || inputs.platform == 'all'
+      - name: 📋 Rename build output and push version tag
+        if: success()
         run: |
-          npx eas build \
-            --platform ios \
-            --profile production \
-            --non-interactive \
-            --wait
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          VERSION='${{ steps.bump.outputs.version }}'
+          mv app-prod.apk "Primordium-v${VERSION}.apk"
+          git push origin HEAD
+          git push origin "v${VERSION}"
 
-      # ── 3. Find built artifacts ────────────────────────────────
-      - name: Locate artifacts
-        id: artifacts
-        run: |
-          APK=$(find . -maxdepth 1 -name '*.apk' -type f -printf '%f\n' | head -1)
-          IPA=$(find . -maxdepth 1 -name '*.ipa' -type f -printf '%f\n' | head -1)
-          echo "apk=${APK}" >> "$GITHUB_OUTPUT"
-          echo "ipa=${IPA}" >> "$GITHUB_OUTPUT"
-
-      # ── 4. Build release body with QR codes ────────────────────
-      - name: Build release body
+      - name: 🏷️ Generate release content
         run: |
           node -e '
             const fs = require("fs");
             const v  = "${{ steps.bump.outputs.version }}";
             const repo = "${{ github.repository }}";
-            const srv  = "${{ github.server_url }}";
-            const sha  = "${{ github.sha }}";
-            const plat = "${{ inputs.platform }}";
-            const apk  = "${{ steps.artifacts.outputs.apk }}";
-            const ipa  = "${{ steps.artifacts.outputs.ipa }}";
+            const apk  = `Primordium-v${v}.apk`;
             const base = `https://github.com/${repo}/releases/download/v${v}`;
-            const qr   = (url) =>
-              `![QR Code](https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)})`;
-
-            let body = `## Primordium v${v}\n\n`;
-            body += `**Platform:** \`${plat}\`\n`;
-            body += `**Commit:** [${sha}](${srv}/${repo}/commit/${sha})\n`;
-
-            if (apk) {
-              const url = `${base}/${apk}`;
-              body += `\n### Android\n\n${qr(url)}\n\n[${apk}](${url})\n`;
-            }
-            if (ipa) {
-              const url = `${base}/${ipa}`;
-              body += `\n### iOS\n\n${qr(url)}\n\n[${ipa}](${url})\n`;
-            }
-
-            fs.writeFileSync("/tmp/release-body.md", body);
+            const url  = `${base}/${apk}`;
+            const qr   = `![QR Code](https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)})`;
+            const body = `Scan to download (APK):\n\n${qr}`;
+            fs.writeFileSync("/tmp/release-content.md", body);
           '
 
-      # ── 5. Create release with artifacts ────────────────────────
-      - name: Create Release
+      - name: 📝 Create release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.bump.outputs.version }}
           name: v${{ steps.bump.outputs.version }}
-          body_path: /tmp/release-body.md
+          body_path: /tmp/release-content.md
           files: |
             *.apk
-            *.ipa
           prerelease: ${{ inputs.prerelease }}
           generate_release_notes: true
         env:
