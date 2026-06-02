@@ -3,6 +3,8 @@ import React from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Image } from 'expo-image';
+
 import { PrimaryButton } from '@/components/primary-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -36,6 +38,7 @@ export default function OnboardingScreen() {
         contentContainerStyle={[styles.content, { paddingTop: insets.top }]}
         showsVerticalScrollIndicator={false}>
           <ThemedView style={styles.hero}>
+            <Image source={require('@/assets/images/adaptive-icon.png')} style={styles.icon} />
             <ThemedText type="title" style={styles.title}>
               Primordium
             </ThemedText>
@@ -108,7 +111,6 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    alignItems: 'center',
   },
   content: {
     maxWidth: MaxContentWidth,
@@ -117,7 +119,14 @@ const styles = StyleSheet.create({
     gap: Spacing.four,
   },
   hero: {
-    gap: Spacing.two,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
+  icon: {
+    width: 24,
+    height: 24,
+    borderRadius: Spacing.one,
   },
   eyebrow: {
     letterSpacing: 2,

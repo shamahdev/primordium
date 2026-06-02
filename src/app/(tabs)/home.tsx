@@ -1,17 +1,3 @@
-import { type BottomSheetModal } from '@gorhom/bottom-sheet';
-import { Image } from 'expo-image';
-import { Redirect, router, useFocusEffect } from 'expo-router';
-import React from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  View,
-  useWindowDimensions,
-} from 'react-native';
 import { ErrorBanner } from '@/components/error-banner';
 import { PrimaryButton } from '@/components/primary-button';
 import { StoreItemCard } from '@/components/store-item-card';
@@ -27,11 +13,25 @@ import { log } from '@/lib/logger';
 import { getLoginHref, getSwitchAccountHref } from '@/lib/navigation';
 import { fetchProfileSnapshot, fetchStoreSnapshot } from '@/lib/valorant-api';
 import { useAccountStore } from '@/stores/account-store';
+import { type BottomSheetModal } from '@gorhom/bottom-sheet';
+import { Image } from 'expo-image';
+import { Redirect, router, useFocusEffect } from 'expo-router';
+import React from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 
 export default function AuthenticatedHomeScreen() {
   const theme = useTheme();
   const { width: windowWidth } = useWindowDimensions();
-  const activeAccountId = useAccountStore((state) => state.activeAccountId);
+  // const activeAccountId = useAccountStore((state) => state.activeAccountId);
   const account = useAccountStore((state) =>
     state.accounts.find((item) => item.id === state.activeAccountId),
   );
@@ -44,20 +44,23 @@ export default function AuthenticatedHomeScreen() {
   const sheetRef = React.useRef<BottomSheetModal>(null);
   const navigatingFromSheet = React.useRef(false);
 
-  const routeToAuthRecovery = (accountId: string) => {
-    if (accounts.length > 1) {
-      router.replace(getSwitchAccountHref({ reason: 'reauthFailed', accountId, returnTo: '/home' }));
-      return;
-    }
-    router.replace(getLoginHref({ mode: 'reauth', accountId, returnTo: '/home' }));
-  };
+  const routeToAuthRecovery = React.useCallback(
+    (accountId: string) => {
+      if (accounts.length > 1) {
+        router.replace(getSwitchAccountHref({ reason: 'reauthFailed', accountId, returnTo: '/home' }));
+        return;
+      }
+      router.replace(getLoginHref({ mode: 'reauth', accountId, returnTo: '/home' }));
+    },
+    [accounts.length],
+  );
 
-  const refreshStore = async () => {
+  const refreshStore = React.useCallback(async () => {
     const currentAccount = useAccountStore.getState().accounts.find(
-      (item) => item.id === activeAccountId,
+      (item) => item.id === useAccountStore.getState().activeAccountId,
     );
     log.store.debug('refreshStore called', {
-      activeAccountId,
+      activeAccountId: useAccountStore.getState().activeAccountId,
       hasAccount: !!currentAccount,
       status: currentAccount?.status,
     });
@@ -110,18 +113,22 @@ export default function AuthenticatedHomeScreen() {
       }
       setRefreshing(false);
     }
-  };
+  }, [setStoreSnapshot, setProfileSnapshot, routeToAuthRecovery]);
 
-  useFocusEffect(() => {
-    void refreshStore();
-  });
+  useFocusEffect(
+    React.useCallback(() => {
+      void refreshStore();
+    }, [refreshStore]),
+  );
 
-  useFocusEffect(() => {
-    if (navigatingFromSheet.current && selectedSection) {
-      navigatingFromSheet.current = false;
-      sheetRef.current?.present();
-    }
-  });
+  useFocusEffect(
+    React.useCallback(() => {
+      if (navigatingFromSheet.current && selectedSection) {
+        navigatingFromSheet.current = false;
+        sheetRef.current?.present();
+      }
+    }, [selectedSection]),
+  );
   if (!account) {
     return <Redirect href="/" />;
   }
@@ -151,7 +158,7 @@ export default function AuthenticatedHomeScreen() {
       <ThemedView style={styles.screen}>
         <View style={[styles.safeArea, styles.centered]}>
           <ActivityIndicator />
-          <ThemedText themeColor="textSecondary">Loading current store\u2026</ThemedText>
+          <ThemedText themeColor="textSecondary">Loading current store...</ThemedText>
         </View>
       </ThemedView>
     );

@@ -24,7 +24,7 @@ export default function HomeScreen() {
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <ActivityIndicator />
-          <ThemedText themeColor="textSecondary">Loading saved accounts\u2026</ThemedText>
+          <ThemedText themeColor="textSecondary">Loading saved accounts...</ThemedText>
         </SafeAreaView>
       </ThemedView>
     );

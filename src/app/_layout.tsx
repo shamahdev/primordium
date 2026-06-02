@@ -5,7 +5,6 @@ import React from 'react';
 import { useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { RiotSessionRefreshWebView } from '@/components/riot-session-refresh-webview';
 
 export default function RootLayout() {
@@ -14,7 +13,6 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <BottomSheetModalProvider>
-          <AnimatedSplashOverlay />
           <RiotSessionRefreshWebView />
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />

@@ -1,56 +1,65 @@
+<!-- prettier-ignore -->
+<div align="center">
+
+<img src="./assets/images/icon.png" alt="Primordium" align="center" height="96" />
+
 # Primordium
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+**Check your Valorant daily store without opening the game — across multiple accounts**
 
-## Get started
+[![Expo](https://img.shields.io/badge/Expo-55-000020?style=flat-square&logo=expo)](https://expo.dev)
+[![React Native](https://img.shields.io/badge/React_Native-0.83-61dafb?style=flat-square&logo=react)](https://reactnative.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![iOS](https://img.shields.io/badge/iOS-supported-success?style=flat-square&logo=apple)](https://www.apple.com/ios/)
+[![Android](https://img.shields.io/badge/Android-supported-success?style=flat-square&logo=android)](https://www.android.com/)
 
-1. Install dependencies
+[Download](#download) • [Features](#features) • [Tech Stack](#tech-stack) • [How to Contribute](#how-to-contribute) • [Discussion](#discussion)
 
-   ```bash
-   npm install
-   ```
+</div>
 
-2. Start the app
+## Overview
 
-   ```bash
-   npx expo start
-   ```
+Primordium is an unofficial mobile companion app for Valorant that lets you check your personalized daily store, featured bundles, and Night Market without launching the game. Switch between multiple Riot accounts on a single device and keep tabs on every store rotation at a glance.
 
-In the output, you'll find options to open the app in a
+Heavily inspired by [VShop](https://vshop.one/), Primordium aims to deliver a fast, native, and secure experience for players who want quick access to their Valorant store from anywhere.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Download
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Get the latest version from the [releases page](https://github.com/shamahdev/primordium/releases).
 
-## Get a fresh project
+## Features
 
-When you're ready, run:
+- **Daily Store, Bundles & Night Market** - View daily offerings, featured bundles and night market with countdown timers
+- **Profile Stats** - Track level, XP, and currency balances
+- **Auto Session Refresh** - Stay logged in without manual re-authentication
+- **Multi-Account Support** - Switch between multiple Riot accounts on one device
 
-```bash
-npm run reset-project
-```
+## Tech Stack
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+- **[Expo](https://expo.dev)** & **[React Native](https://reactnative.dev)**
+- **[Expo Router](https://docs.expo.dev/router/introduction/)**
+- **[Zustand](https://github.com/pmndrs/zustand)**
 
-### Other setup steps
+## How to Contribute
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to this project.
 
-## Learn more
+## Discussion
 
-To learn more about developing your project with Expo, look at the following resources:
+Have questions, feature requests, or ideas? Join the conversation in [GitHub Discussions](https://github.com/shamahdev/primordium/discussions).
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Learn More
 
-## Join the community
+- [Expo Documentation](https://docs.expo.dev/)
+- [React Native Documentation](https://reactnative.dev/docs/getting-started)
+- [Valorant API Documentation](https://valapidocs.techchrism.me/)
 
-Join our community of developers creating universal apps.
+## Acknowledgments
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- [VShop](https://vshop.one/), the primary inspiration for this project
+- [valorant-api.com](https://valorant-api.com/) for public asset and metadata APIs
+
+---
+
+> [!IMPORTANT]
+> Primordium is an **unofficial** project. It is not endorsed by, affiliated with, or connected to Riot Games or VALORANT in any way. All Valorant and Riot Games assets are property of their respective owners.

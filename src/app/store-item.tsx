@@ -22,7 +22,7 @@ type StoreItemParams = {
 
 export default function StoreItemScreen() {
   const params = useLocalSearchParams<StoreItemParams>();
-  const theme = useTheme();
+  // const theme = useTheme();
 
   if (params.itemType === 'skin') {
     return <SkinDetailView params={params} />;

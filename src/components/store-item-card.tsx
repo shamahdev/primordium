@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo/linear-gradient';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';

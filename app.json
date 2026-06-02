@@ -5,12 +5,28 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#E6112E",
+      "imageWidth": 257
+    },
     "scheme": "primordium",
     "userInterfaceStyle": "automatic",
+    "build": {
+      "development": {
+        "developmentClient": true,
+        "distribution": "internal"
+      }
+    },
     "ios": {
       "bundleIdentifier": "dev.shamah.primordium"
     },
     "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#E6112E"
+      },
       "package": "dev.shamah.primordium",
       "predictiveBackGestureEnabled": false
     },
@@ -20,17 +36,6 @@
     },
     "plugins": [
       "expo-router",
-      "./plugins/with-android-theme-colors",
-      [
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#E6112E",
-          "android": {
-            "image": "./assets/images/splash.png",
-            "imageWidth": 76
-          }
-        }
-      ],
       "expo-secure-store",
       "expo-image",
       "expo-video"

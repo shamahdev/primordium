@@ -27,7 +27,7 @@ export default function ProfileScreen() {
     state.accounts.find((item) => item.id === state.activeAccountId),
   );
   const accounts = useAccountStore((state) => state.accounts);
-  const accountStatus = account?.status;
+  // const accountStatus = account?.status;
   const setProfileSnapshot = useAccountStore((state) => state.setProfileSnapshot);
   const removeAccount = useAccountStore((state) => state.removeAccount);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -182,7 +182,6 @@ function MenuButton({ label, destructive, onPress }: { label: string; destructiv
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    alignItems: 'center',
   },
   content: {
     padding: Spacing.four,

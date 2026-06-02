@@ -1,12 +1,30 @@
 {
   "name": "primordium",
-  "main": "expo-router/entry",
   "version": "1.0.0",
+  "main": "expo-router/entry",
+  "author": {
+    "name": "shamahdev",
+    "url": "https://github.com/shamahdev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shamahdev/primordium.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shamahdev/primordium/issues"
+  },
+  "homepage": "https://github.com/shamahdev/primordium#readme",
+  "license": "GPL-3.0-only",
   "scripts": {
     "start": "expo start",
+    "start:dev": "cross-env APP_VARIANT=development expo start",
+    "start:preview": "cross-env APP_VARIANT=preview expo start",
     "android": "expo run:android",
+    "android:dev": "cross-env APP_VARIANT=development expo run:android",
+    "android:preview": "cross-env APP_VARIANT=preview expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web",
+    "ios:dev": "cross-env APP_VARIANT=development expo run:ios",
+    "ios:preview": "cross-env APP_VARIANT=preview expo run:ios",
     "lint": "expo lint",
     "preinstall": "npx only-allow npm"
   },
@@ -26,6 +44,7 @@
     "expo-font": "~55.0.8",
     "expo-glass-effect": "~55.0.11",
     "expo-image": "~55.0.11",
+    "expo-linear-gradient": "~55.0.14",
     "expo-linking": "~55.0.15",
     "expo-router": "~55.0.16",
     "expo-secure-store": "~55.0.14",
@@ -51,9 +70,10 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "cross-env": "^10.1.0",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~55.0.1",
+    "react-doctor": "^0.2.16",
     "typescript": "~5.9.2"
-  },
-  "private": true
+  }
 }

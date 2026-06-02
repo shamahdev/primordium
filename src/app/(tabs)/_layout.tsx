@@ -1,10 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
 import { MaterialTopTabNavigationEventMap, MaterialTopTabNavigationOptions, createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { ParamListBase, TabNavigationState } from '@react-navigation/native';
-import { Image } from 'expo-image';
 import { withLayoutContext } from 'expo-router';
 import React from 'react';
-import { StyleSheet, useColorScheme, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Platform, StyleSheet, useColorScheme, useWindowDimensions } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TabHeader } from '@/components/tab-header';
 import { Colors, Spacing } from '@/constants/theme';
@@ -22,6 +22,7 @@ export default function AuthenticatedTabsLayout() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
   const layout = useWindowDimensions();
+  const insets = useSafeAreaInsets();
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]} edges={['top']}>
@@ -42,6 +43,9 @@ export default function AuthenticatedTabsLayout() {
             backgroundColor: 'transparent',
             height: 0,
           },
+             tabBarStyle: {                                                                                                                                                                   
+     paddingBottom: Platform.OS === 'android' ? insets.bottom : 0,                                                                                                                  
+   },
           tabBarItemStyle: styles.item,
           tabBarLabelStyle: styles.label,
         }}>
@@ -50,11 +54,7 @@ export default function AuthenticatedTabsLayout() {
           options={{
             title: 'Store',
             tabBarIcon: ({ color }) => (
-              <Image
-                source={require('@/assets/images/tabIcons/home.png')}
-                style={styles.icon}
-                tintColor={color}
-              />
+              <Ionicons name="storefront-outline" size={22} color={color} />
             ),
           }}
         />
@@ -63,11 +63,7 @@ export default function AuthenticatedTabsLayout() {
           options={{
             title: 'Accounts',
             tabBarIcon: ({ color }) => (
-              <Image
-                source={require('@/assets/images/tabIcons/explore.png')}
-                style={styles.icon}
-                tintColor={color}
-              />
+              <Ionicons name="person-outline" size={22} color={color} />
             ),
           }}
         />
@@ -87,9 +83,5 @@ const styles = StyleSheet.create({
   },
   item: {
     paddingVertical: Spacing.one,
-  },
-  icon: {
-    width: 20,
-    height: 20,
   },
 });

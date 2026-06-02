@@ -7,7 +7,7 @@ import { RiotLoginWebView } from '@/components/riot-login-webview';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { getAccountLabel, isValorantShard, type StoredAuthTokens, type StoredRiotAccount, type StoredRiotCookie, type ValorantShard } from '@/lib/account';
+import { getAccountLabel, isValorantShard, type StoredAuthTokens, type StoredRiotAccount, type StoredRiotCookie } from '@/lib/account';
 import {
   getOnboardingHref,
   getReturnToHref,
@@ -38,7 +38,7 @@ export default function LoginScreen() {
   const reauthAccount = accounts.find((account) => account.id === params.accountId);
   const shard = mode === 'reauth' ? reauthAccount?.shard : isValorantShard(params.shard) ? params.shard : undefined;
   const returnTo = sanitizeReturnToRoute(params.returnTo);
-  const webViewKey = React.useRef(0);
+  const [webViewKey, setWebViewKey] = React.useState(0);
 
   React.useEffect(() => {
     if (!shard || (mode === 'reauth' && !reauthAccount)) {
@@ -76,7 +76,7 @@ export default function LoginScreen() {
     if (mode === 'add' && accounts.some((account) => account.puuid === result.account.puuid && account.shard !== result.account.shard)) {
       const confirmed = await confirmDifferentRegion(result.account);
       if (!confirmed) {
-        webViewKey.current += 1;
+        setWebViewKey((prev) => prev + 1);
         return;
       }
     }
@@ -114,7 +114,7 @@ export default function LoginScreen() {
         {
           text: 'Try again',
           onPress: () => {
-            webViewKey.current += 1;
+            setWebViewKey((prev) => prev + 1);
             resolve();
           },
         },
@@ -123,6 +123,26 @@ export default function LoginScreen() {
     });
   }
 
+  return (
+    <ThemedView style={styles.screen}>
+      <SafeAreaView style={styles.safeArea}>
+        <ThemedView style={styles.header}>
+          <ThemedText type="title">
+            {mode === 'reauth' ? 'Re-authenticate' : 'Sign in with Riot'}
+          </ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            {shard?.toUpperCase()} Region
+          </ThemedText>
+        </ThemedView>
+        <RiotLoginWebView
+          key={webViewKey}
+          shard={shard}
+          onCancel={cancel}
+          onAuthenticated={handleAuthenticated}
+        />
+      </SafeAreaView>
+    </ThemedView>
+  );
 }
 
 const styles = StyleSheet.create({
