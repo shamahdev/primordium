@@ -5,12 +5,6 @@
     "version": "0.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "splash": {
-      "image": "./assets/images/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#E6112E",
-      "imageWidth": 257
-    },
     "scheme": "primordium",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -30,6 +24,14 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#E6112E",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 300
+        }
+      ],
       "expo-secure-store",
       "expo-image",
       "expo-video"
