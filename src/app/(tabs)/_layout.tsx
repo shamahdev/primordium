@@ -7,7 +7,9 @@ import { Platform, StyleSheet, useColorScheme, useWindowDimensions } from 'react
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TabHeader } from '@/components/tab-header';
+import { UpdateBanner } from '@/components/update-banner';
 import { Colors, Spacing } from '@/constants/theme';
+import { useUpdateCheck } from '@/hooks/use-update-check';
 
 const { Navigator } = createMaterialTopTabNavigator();
 
@@ -23,10 +25,18 @@ export default function AuthenticatedTabsLayout() {
   const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
   const layout = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const { showBanner, latestVersion, releaseUrl, dismissBanner } = useUpdateCheck();
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]} edges={['top']}>
       <TabHeader />
+      {showBanner && latestVersion && releaseUrl && (
+        <UpdateBanner
+          version={latestVersion}
+          releaseUrl={releaseUrl}
+          onDismiss={dismissBanner}
+        />
+      )}
       <MaterialTopTabs
         initialRouteName="home"
         initialLayout={{ width: layout.width }}
@@ -55,6 +65,15 @@ export default function AuthenticatedTabsLayout() {
             title: 'Store',
             tabBarIcon: ({ color }) => (
               <Ionicons name="storefront-outline" size={22} color={color} />
+            ),
+          }}
+        />
+        <MaterialTopTabs.Screen
+          name="catalog"
+          options={{
+            title: 'Catalog',
+            tabBarIcon: ({ color }) => (
+              <Ionicons name="grid-outline" size={22} color={color} />
             ),
           }}
         />

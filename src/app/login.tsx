@@ -94,9 +94,9 @@ export default function LoginScreen() {
       Alert.alert('Login saved', 'Future silent sign-in may require another Riot login because cookies could not be saved.');
     }
     const target = getReturnToHref(returnTo);
-    log.nav.debug('login success: replace + dismissAll', { returnTo, target });
-    router.replace(target);
+    log.nav.debug('login success: dismissAll + replace', { returnTo, target });
     router.dismissAll();
+    router.replace(target);
   }
 
   async function handleReauthMismatch(result: {

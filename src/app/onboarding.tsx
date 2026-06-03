@@ -38,7 +38,7 @@ export default function OnboardingScreen() {
         contentContainerStyle={[styles.content, { paddingTop: insets.top }]}
         showsVerticalScrollIndicator={false}>
           <ThemedView style={styles.hero}>
-            <Image source={require('@/assets/images/adaptive-icon.png')} style={styles.icon} />
+            <Image source={require('@/assets/images/splash-icon.png')} style={styles.icon} />
             <ThemedText type="title" style={styles.title}>
               Primordium
             </ThemedText>

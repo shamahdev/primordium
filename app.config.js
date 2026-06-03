@@ -26,6 +26,7 @@ function getAppName() {
 export default ({ config }) => ({
   ...config,
   name: getAppName(),
+  plugins: [...(config.plugins ?? []), 'expo-background-task', 'expo-notifications'],
   ios: {
     ...config.ios,
     bundleIdentifier: getUniqueIdentifier(),

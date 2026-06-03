@@ -7,6 +7,11 @@ type StoreAsset = {
   rarity?: 'select' | 'deluxe' | 'premium' | 'exclusive' | 'ultra';
 };
 
+export type CosmeticCatalogItem = StoreAsset & {
+  id: string;
+  itemType: 'skin' | 'buddy' | 'spray' | 'card' | 'title' | 'flex';
+};
+
 export type SkinDetailChroma = {
   uuid: string;
   displayName: string;
@@ -88,6 +93,12 @@ type SprayAsset = {
   animationGif?: string | null;
 };
 
+type PlayerTitleAsset = {
+  uuid: string;
+  displayName?: string | null;
+  titleText?: string | null;
+};
+
 type ValorantApiResponse<T> = {
   data?: T[];
 };
@@ -95,7 +106,12 @@ type ValorantApiResponse<T> = {
 const VALORANT_PUBLIC_API_ROOT = 'https://valorant-api.com/v1';
 
 let bundleAssetsPromise: Promise<Map<string, StoreAsset>> | null = null;
-let itemAssetsPromise: Promise<{ items: Map<string, StoreAsset>; skinDetails: Map<string, SkinDetailAsset> }> | null = null;
+let itemAssetsPromise: Promise<{
+  items: Map<string, StoreAsset>;
+  skinDetails: Map<string, SkinDetailAsset>;
+  catalog: CosmeticCatalogItem[];
+  canonicalItems: Map<string, CosmeticCatalogItem>;
+}> | null = null;
 
 const CONTENT_TIER_TO_RARITY: Record<string, StoreAsset['rarity']> = {
   '12683d76-48d7-84a3-4e09-6985794f0445': 'select',
@@ -118,6 +134,24 @@ export async function getStoreItemAsset(itemId: string) {
 export async function getSkinDetailAsset(itemId: string) {
   const { skinDetails } = await getItemAssets();
   return skinDetails.get(itemId);
+}
+
+export async function getCosmeticCatalogItems({ refresh = false } = {}) {
+  if (refresh) {
+    itemAssetsPromise = null;
+  }
+
+  const { catalog } = await getItemAssets();
+  if (catalog.length === 0) {
+    throw new Error('Could not load cosmetic catalog.');
+  }
+
+  return catalog;
+}
+
+export async function getCanonicalCosmeticCatalogItem(itemId: string) {
+  const { canonicalItems } = await getItemAssets();
+  return canonicalItems.get(itemId);
 }
 
 async function getBundleAssets() {
@@ -151,16 +185,19 @@ async function loadBundleAssets() {
 }
 
 async function loadItemAssets() {
-  const [skins, buddies, playerCards, sprays, flexes] = await Promise.all([
+  const [skins, buddies, playerCards, sprays, flexes, playerTitles] = await Promise.all([
     fetchCatalog<SkinAsset>('weapons/skins'),
     fetchCatalog<BuddyAsset>('buddies'),
     fetchCatalog<PlayerCardAsset>('playercards'),
     fetchCatalog<SprayAsset>('sprays'),
     fetchCatalog<BundleAsset>('flex'),
+    fetchCatalog<PlayerTitleAsset>('playertitles'),
   ]);
 
   const items = new Map<string, StoreAsset>();
   const skinDetails = new Map<string, SkinDetailAsset>();
+  const catalog: CosmeticCatalogItem[] = [];
+  const canonicalItems = new Map<string, CosmeticCatalogItem>();
 
   for (const skin of skins) {
     const imageUrl =
@@ -170,9 +207,14 @@ async function loadItemAssets() {
       skin.levels[0]?.displayIcon ??
       undefined;
     const rarity = skin.contentTierUuid ? CONTENT_TIER_TO_RARITY[skin.contentTierUuid] : undefined;
-    items.set(skin.uuid, { title: skin.displayName, imageUrl, rarity });
+    const skinAsset = { title: skin.displayName, imageUrl, rarity };
+    const skinCatalogItem: CosmeticCatalogItem = { id: skin.uuid, itemType: 'skin', ...skinAsset };
+    items.set(skin.uuid, skinAsset);
+    catalog.push(skinCatalogItem);
+    canonicalItems.set(skin.uuid, skinCatalogItem);
     for (const level of skin.levels) {
       items.set(level.uuid, { title: skin.displayName, imageUrl: level.displayIcon ?? imageUrl, rarity });
+      canonicalItems.set(level.uuid, skinCatalogItem);
     }
 
     const detail: SkinDetailAsset = {
@@ -203,38 +245,64 @@ async function loadItemAssets() {
 
   for (const buddy of buddies) {
     const imageUrl = buddy.displayIcon ?? buddy.levels[0]?.displayIcon ?? undefined;
-    items.set(buddy.uuid, { title: buddy.displayName, imageUrl });
+    const buddyAsset = { title: buddy.displayName, imageUrl };
+    const buddyCatalogItem: CosmeticCatalogItem = { id: buddy.uuid, itemType: 'buddy', ...buddyAsset };
+    items.set(buddy.uuid, buddyAsset);
+    catalog.push(buddyCatalogItem);
+    canonicalItems.set(buddy.uuid, buddyCatalogItem);
     for (const level of buddy.levels) {
       items.set(level.uuid, { title: buddy.displayName, imageUrl: level.displayIcon ?? imageUrl });
+      canonicalItems.set(level.uuid, buddyCatalogItem);
     }
   }
 
   for (const playerCard of playerCards) {
-    items.set(playerCard.uuid, {
+    const cardAsset = {
       title: playerCard.displayName,
       imageUrl: playerCard.displayIcon ?? playerCard.wideArt ?? playerCard.largeArt ?? undefined,
       wideImageUrl: playerCard.wideArt ?? undefined,
       largeImageUrl: playerCard.largeArt ?? undefined,
-    });
+    };
+    items.set(playerCard.uuid, cardAsset);
+    const cardCatalogItem: CosmeticCatalogItem = { id: playerCard.uuid, itemType: 'card', ...cardAsset };
+    catalog.push(cardCatalogItem);
+    canonicalItems.set(playerCard.uuid, cardCatalogItem);
   }
 
   for (const spray of sprays) {
-    items.set(spray.uuid, {
+    const sprayAsset = {
       title: spray.displayName,
       imageUrl: spray.fullTransparentIcon ?? spray.fullIcon ?? spray.displayIcon ?? undefined,
       largeImageUrl: spray.fullTransparentIcon ?? spray.fullIcon ?? undefined,
       animationUrl: spray.animationGif ?? undefined,
-    });
+    };
+    items.set(spray.uuid, sprayAsset);
+    const sprayCatalogItem: CosmeticCatalogItem = { id: spray.uuid, itemType: 'spray', ...sprayAsset };
+    catalog.push(sprayCatalogItem);
+    canonicalItems.set(spray.uuid, sprayCatalogItem);
   }
 
   for (const flex of flexes) {
-    items.set(flex.uuid, {
+    const flexAsset = {
       title: flex.displayName,
       imageUrl: flex.verticalPromoImage ?? flex.displayIcon2 ?? flex.displayIcon ?? undefined,
-    });
+    };
+    items.set(flex.uuid, flexAsset);
+    const flexCatalogItem: CosmeticCatalogItem = { id: flex.uuid, itemType: 'flex', ...flexAsset };
+    catalog.push(flexCatalogItem);
+    canonicalItems.set(flex.uuid, flexCatalogItem);
   }
 
-  return { items, skinDetails };
+  for (const playerTitle of playerTitles) {
+    const title = playerTitle.displayName ?? playerTitle.titleText ?? 'Player Title';
+    const titleAsset = { title };
+    items.set(playerTitle.uuid, titleAsset);
+    const titleCatalogItem: CosmeticCatalogItem = { id: playerTitle.uuid, itemType: 'title', ...titleAsset };
+    catalog.push(titleCatalogItem);
+    canonicalItems.set(playerTitle.uuid, titleCatalogItem);
+  }
+
+  return { items, skinDetails, catalog, canonicalItems };
 }
 
 async function fetchCatalog<T>(path: string) {

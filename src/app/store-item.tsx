@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -9,16 +10,29 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { StoreItemRarity } from '@/lib/account';
-import { getSkinDetailAsset, getStoreItemAsset, type SkinDetailAsset, type SkinDetailChroma, type SkinDetailLevel } from '@/lib/valorant-store-assets';
+import {
+  getCanonicalCosmeticCatalogItem,
+  getSkinDetailAsset,
+  getStoreItemAsset,
+  type CosmeticCatalogItem,
+  type SkinDetailAsset,
+  type SkinDetailChroma,
+  type SkinDetailLevel,
+} from '@/lib/valorant-store-assets';
+import { useFavoriteStore } from '@/stores/favorite-store';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type StoreItemParams = {
   itemAssetId: string;
   itemType: string;
   title: string;
-  priceAmount: string;
-  priceCurrency: string;
+  priceAmount?: string;
+  priceCurrency?: string;
   rarity?: string;
+  source?: string;
 };
+
+const FavoriteStarColor = '#FAD663';
 
 export default function StoreItemScreen() {
   const params = useLocalSearchParams<StoreItemParams>();
@@ -33,6 +47,7 @@ export default function StoreItemScreen() {
 
 function SkinDetailView({ params }: { params: StoreItemParams }) {
   const theme = useTheme();
+  const favoriteItem = useResolvedFavoriteItem(params);
   const [skinDetail, setSkinDetail] = React.useState<SkinDetailAsset | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [selectedChromaIndex, setSelectedChromaIndex] = React.useState(0);
@@ -52,6 +67,7 @@ function SkinDetailView({ params }: { params: StoreItemParams }) {
 
   const selectedChroma = skinDetail?.chromas[selectedChromaIndex];
   const heroImageUrl = selectedChroma?.fullRender ?? selectedChroma?.displayIcon ?? skinDetail?.displayIcon;
+  const showPrice = shouldShowPrice(params);
 
   const handleChromaSelect = (index: number) => {
     setSelectedChromaIndex(index);
@@ -67,9 +83,9 @@ function SkinDetailView({ params }: { params: StoreItemParams }) {
   if (loading) {
     return (
       <ThemedView style={styles.screen}>
-        <View style={[styles.safeArea, styles.centered]}>
+        <SafeAreaView style={[styles.safeArea, styles.centered]}>
           <ActivityIndicator />
-        </View>
+        </SafeAreaView>
       </ThemedView>
     );
   }
@@ -77,12 +93,12 @@ function SkinDetailView({ params }: { params: StoreItemParams }) {
   if (!skinDetail) {
     return (
       <ThemedView style={styles.screen}>
-        <View style={styles.safeArea}>
-          <Header title={params.title} />
+        <SafeAreaView style={styles.safeArea}>
+          <Header title={params.title} favoriteItem={favoriteItem} />
           <View style={styles.centered}>
             <ThemedText themeColor="textSecondary">Skin detail unavailable</ThemedText>
           </View>
-        </View>
+        </SafeAreaView>
       </ThemedView>
     );
   }
@@ -105,7 +121,9 @@ function SkinDetailView({ params }: { params: StoreItemParams }) {
 
   return (
     <ThemedView style={styles.screen}>
-      <Header title={params.title} />
+      <SafeAreaView style={styles.safeArea}>
+
+      <Header title={params.title} favoriteItem={favoriteItem} />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -126,7 +144,13 @@ function SkinDetailView({ params }: { params: StoreItemParams }) {
         <View style={styles.titleRow}>
           <View style={styles.titleBlock}>
             <ThemedText type="subtitle" numberOfLines={2}>{skinDetail.title}</ThemedText>
-            <PriceDisplay amount={params.priceAmount} currency={params.priceCurrency} rarity={params.rarity as StoreItemRarity | undefined} />
+            {showPrice ? (
+              <PriceDisplay
+                amount={params.priceAmount!}
+                currency={params.priceCurrency!}
+                rarity={params.rarity as StoreItemRarity | undefined}
+              />
+            ) : null}
           </View>
         </View>
 
@@ -161,6 +185,7 @@ function SkinDetailView({ params }: { params: StoreItemParams }) {
           </View>
         )}
       </ScrollView>
+      </SafeAreaView>
     </ThemedView>
   );
 }
@@ -174,6 +199,7 @@ type DetailState = {
 };
 
 function SimpleDetailView({ params }: { params: StoreItemParams }) {
+  const favoriteItem = useResolvedFavoriteItem(params);
   const [state, setState] = React.useReducer(
     (prev: DetailState, next: Partial<DetailState>) => ({ ...prev, ...next }),
     { loading: true },
@@ -197,11 +223,13 @@ function SimpleDetailView({ params }: { params: StoreItemParams }) {
   }, [params.itemAssetId]);
 
   const isCard = params.itemType === 'card';
+  const isTitle = params.itemType === 'title';
   const heroSource = state.animationUrl ?? state.largeImageUrl ?? state.imageUrl;
+  const showPrice = shouldShowPrice(params);
 
   return (
     <ThemedView style={styles.screen}>
-      <Header title={params.title} />
+      <Header title={params.title} favoriteItem={favoriteItem} />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -211,6 +239,8 @@ function SimpleDetailView({ params }: { params: StoreItemParams }) {
           <View style={styles.heroContainer}>
             <ActivityIndicator />
           </View>
+        ) : isTitle ? (
+          <TitlePreview title={params.title} />
         ) : isCard && state.imageUrl && state.wideImageUrl && state.largeImageUrl ? (
           <CardArtGrid displayIcon={state.imageUrl} wideArt={state.wideImageUrl} largeArt={state.largeImageUrl} />
         ) : heroSource ? (
@@ -227,10 +257,30 @@ function SimpleDetailView({ params }: { params: StoreItemParams }) {
         <View style={styles.titleRow}>
           <View style={styles.titleBlock}>
             <ThemedText type="subtitle" numberOfLines={2}>{params.title}</ThemedText>
-            <PriceDisplay amount={params.priceAmount} currency={params.priceCurrency} rarity={params.rarity as StoreItemRarity | undefined} />
+            {isTitle ? <ThemedText themeColor="textSecondary">Player Title</ThemedText> : null}
+            {showPrice ? (
+              <PriceDisplay
+                amount={params.priceAmount!}
+                currency={params.priceCurrency!}
+                rarity={params.rarity as StoreItemRarity | undefined}
+              />
+            ) : null}
           </View>
         </View>
       </ScrollView>
+    </ThemedView>
+  );
+}
+
+function TitlePreview({ title }: { title: string }) {
+  return (
+    <ThemedView type="backgroundElement" style={[styles.heroContainer, styles.titlePreview]}>
+      <ThemedText type="small" themeColor="textSecondary" style={styles.sectionLabel}>
+        PLAYER TITLE
+      </ThemedText>
+      <ThemedText type="subtitle" style={styles.titlePreviewText}>
+        {title}
+      </ThemedText>
     </ThemedView>
   );
 }
@@ -253,16 +303,78 @@ function CardArtGrid({ displayIcon, wideArt, largeArt }: { displayIcon: string; 
   );
 }
 
-function Header({ title }: { title: string }) {
+function Header({ title, favoriteItem }: { title: string; favoriteItem?: CosmeticCatalogItem | null }) {
   const theme = useTheme();
+  const favoritesById = useFavoriteStore((state) => state.favoritesById);
+  const toggleFavorite = useFavoriteStore((state) => state.toggleFavorite);
+  const isFavorite = favoriteItem ? !!favoritesById[favoriteItem.id] : false;
+
+  const handleFavoritePress = () => {
+    if (favoriteItem) {
+      toggleFavorite(favoriteItem);
+    }
+  };
+
   return (
     <View style={styles.header}>
       <View style={{ flex: 1 }} />
+      {favoriteItem ? (
+        <Pressable
+          onPress={handleFavoritePress}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel={isFavorite ? 'Remove favorite' : 'Add favorite'}
+          style={styles.headerButton}>
+          <Ionicons
+            name={isFavorite ? 'star' : 'star-outline'}
+            size={22}
+            color={isFavorite ? FavoriteStarColor : theme.text}
+          />
+        </Pressable>
+      ) : null}
       <Pressable onPress={() => router.back()} hitSlop={12} style={styles.closeButton}>
         <ThemedText type="default" style={{ color: theme.text, fontSize: 20 }}>✕</ThemedText>
       </Pressable>
     </View>
   );
+}
+
+function useResolvedFavoriteItem(params: StoreItemParams) {
+  const [favoriteItem, setFavoriteItem] = React.useState<CosmeticCatalogItem | null>(null);
+  const { itemAssetId, itemType, rarity, title } = params;
+
+  React.useEffect(() => {
+    let cancelled = false;
+    setFavoriteItem(null);
+
+    void (async () => {
+      const item = await getCanonicalCosmeticCatalogItem(itemAssetId);
+      if (!cancelled) {
+        setFavoriteItem(item ?? getFallbackFavoriteItem({ itemAssetId, itemType, rarity, title }));
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [itemAssetId, itemType, rarity, title]);
+
+  return favoriteItem;
+}
+
+function getFallbackFavoriteItem(params: StoreItemParams): CosmeticCatalogItem | null {
+  if (!isCosmeticCatalogItemType(params.itemType)) return null;
+
+  return {
+    id: params.itemAssetId,
+    itemType: params.itemType,
+    title: params.title,
+    rarity: params.rarity as CosmeticCatalogItem['rarity'],
+  };
+}
+
+function isCosmeticCatalogItemType(value: string): value is CosmeticCatalogItem['itemType'] {
+  return ['skin', 'buddy', 'spray', 'card', 'title', 'flex'].includes(value);
 }
 
 function PriceDisplay({ amount, currency, rarity }: { amount: string; currency: string; rarity?: StoreItemRarity }) {
@@ -281,6 +393,10 @@ function PriceDisplay({ amount, currency, rarity }: { amount: string; currency: 
       {rarityIcon ? <Image source={rarityIcon} contentFit="contain" style={styles.rarityBadge} /> : null}
     </View>
   );
+}
+
+function shouldShowPrice(params: StoreItemParams) {
+  return params.source !== 'catalog' && !!params.priceAmount && !!params.priceCurrency;
 }
 
 function LevelRow({ level, index, isActive, onPlay }: { level: SkinDetailLevel; index: number; isActive: boolean; onPlay: () => void }) {
@@ -360,6 +476,12 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
   },
   closeButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerButton: {
     width: 32,
     height: 32,
     alignItems: 'center',
@@ -485,5 +607,12 @@ const styles = StyleSheet.create({
   cardGridImage: {
     width: '100%',
     height: '100%',
+  },
+  titlePreview: {
+    borderRadius: Spacing.three,
+    gap: Spacing.two,
+  },
+  titlePreviewText: {
+    textAlign: 'center',
   },
 });

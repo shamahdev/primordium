@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -8,22 +9,46 @@ import { ThemedText } from '@/components/themed-text';
 import { Colors, RarityColors, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { StoreItem, StoreItemRarity } from '@/lib/account';
+import { getCanonicalCosmeticCatalogItem } from '@/lib/valorant-store-assets';
+import { useFavoriteStore } from '@/stores/favorite-store';
 
 type StoreItemCardProps = {
   item: StoreItem;
   onBeforeNavigate?: () => void;
 };
 
-const NON_TAPPABLE_TYPES: StoreItem['itemType'][] = ['title', 'unknown'];
+const NON_TAPPABLE_TYPES: StoreItem['itemType'][] = ['unknown'];
 const ACCESSORY_TYPES: StoreItem['itemType'][] = ['buddy', 'spray', 'card', 'title', 'flex'];
+const FavoriteStarColor = '#FAD663';
 
 export function StoreItemCard({ item, onBeforeNavigate }: StoreItemCardProps) {
   const theme = useTheme();
+  const favoritesById = useFavoriteStore((state) => state.favoritesById);
+  const [favoriteItemId, setFavoriteItemId] = React.useState<string | null>(null);
   const currencyIcon = getCurrencyIcon(item.price.currency);
   const rarityIcon = item.rarity ? getRarityIcon(item.rarity) : null;
   const rarityColor = item.rarity ? RarityColors[item.rarity] : null;
   const isTappable = !NON_TAPPABLE_TYPES.includes(item.itemType) && !!item.itemAssetId;
   const isAccessory = ACCESSORY_TYPES.includes(item.itemType);
+  const isFavorite = favoriteItemId ? !!favoritesById[favoriteItemId] : false;
+
+  React.useEffect(() => {
+    let cancelled = false;
+    setFavoriteItemId(null);
+
+    if (!item.itemAssetId) return;
+
+    void (async () => {
+      const catalogItem = await getCanonicalCosmeticCatalogItem(item.itemAssetId!);
+      if (!cancelled) {
+        setFavoriteItemId(catalogItem?.id ?? item.itemAssetId ?? null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [item.itemAssetId]);
 
   const handlePress = () => {
     if (!isTappable) return;
@@ -74,8 +99,14 @@ export function StoreItemCard({ item, onBeforeNavigate }: StoreItemCardProps) {
         </View>
       )}
 
+      {isFavorite ? (
+        <View style={styles.favoriteBadge}>
+          <Ionicons name="star" size={14} color={FavoriteStarColor} />
+        </View>
+      ) : null}
+
       {isAccessory && (
-        <View style={styles.accessoryBadge}>
+        <View style={[styles.accessoryBadge, isFavorite && styles.accessoryBadgeWithFavorite]}>
           <ThemedText type="xsmall" style={styles.accessoryBadgeText}>
             {item.itemType.toUpperCase()}
           </ThemedText>
@@ -213,7 +244,22 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.half,
     zIndex: 2,
   },
+  accessoryBadgeWithFavorite: {
+    top: Spacing.one + 24,
+  },
   accessoryBadgeText: {
     color: '#ffffff',
+  },
+  favoriteBadge: {
+    position: 'absolute',
+    top: Spacing.one,
+    right: Spacing.one,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 3,
   },
 });

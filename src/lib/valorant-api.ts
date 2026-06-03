@@ -161,6 +161,51 @@ export async function fetchStoreSnapshot(account: StoredRiotAccount): Promise<St
   return withAuthorizedTokens(account, (tokens) => fetchStoreSnapshotWithTokens(account, tokens));
 }
 
+export type StoreAlertOfferSnapshot = Pick<StoreSnapshot, 'dailyOffers' | 'dailyResetAt' | 'accessoryOffers' | 'accessoryResetAt'>;
+
+export async function fetchStoreAlertOffersWithExistingTokens(
+  account: StoredRiotAccount,
+): Promise<StoreAlertOfferSnapshot | null> {
+  if (account.status !== 'ready') {
+    return null;
+  }
+
+  const tokens = await getAuthTokens(account.id);
+  if (!tokens || shouldRefreshTokens(tokens)) {
+    return null;
+  }
+
+  const storefront = await fetchStorefrontWithTokens(account, tokens);
+  const [dailyOffers, accessoryOffers] = await Promise.all([
+    Promise.all(
+      storefront.SkinsPanelLayout.SingleItemStoreOffers.map((offer) =>
+        buildStoreItem({
+          id: offer.OfferID,
+          reward: offer.Rewards[0],
+          cost: offer.Cost,
+          itemType: 'skin',
+        }),
+      ),
+    ),
+    Promise.all(
+      storefront.AccessoryStore.AccessoryStoreOffers.map(({ Offer: offer }) =>
+        buildStoreItem({
+          id: offer.OfferID,
+          reward: offer.Rewards[0],
+          cost: offer.Cost,
+        }),
+      ),
+    ),
+  ]);
+
+  return {
+    dailyOffers,
+    dailyResetAt: getExpiresAt(storefront.SkinsPanelLayout.SingleItemOffersRemainingDurationInSeconds),
+    accessoryOffers,
+    accessoryResetAt: getExpiresAt(storefront.AccessoryStore.AccessoryStoreRemainingDurationInSeconds),
+  };
+}
+
 export async function ensureAccountSession(account: StoredRiotAccount) {
   await getValidAuthTokens(account);
 }
@@ -195,15 +240,7 @@ async function fetchStoreSnapshotWithTokens(
   account: StoredRiotAccount,
   tokens: StoredAuthTokens,
 ): Promise<StoreSnapshot> {
-  const headers = await getAuthorizedHeaders(tokens);
-  const storefront = await riotFetch<StorefrontResponse>(
-    `https://pd.${account.shard}.a.pvp.net/store/v3/storefront/${account.puuid}`,
-    {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({}),
-    },
-  );
+  const storefront = await fetchStorefrontWithTokens(account, tokens);
 
   const [featuredBundleCard, nightMarketCard, dailyOffers, accessoryOffers] = await Promise.all([
     buildFeaturedBundleCard(storefront.FeaturedBundle),
@@ -237,6 +274,15 @@ async function fetchStoreSnapshotWithTokens(
     accessoryResetAt: getExpiresAt(storefront.AccessoryStore.AccessoryStoreRemainingDurationInSeconds),
     fetchedAt: new Date().toISOString(),
   };
+}
+
+async function fetchStorefrontWithTokens(account: StoredRiotAccount, tokens: StoredAuthTokens) {
+  const headers = await getAuthorizedHeaders(tokens);
+  return riotFetch<StorefrontResponse>(`https://pd.${account.shard}.a.pvp.net/store/v3/storefront/${account.puuid}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({}),
+  });
 }
 
 async function withAuthorizedTokens<T>(

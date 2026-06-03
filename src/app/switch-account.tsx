@@ -54,9 +54,9 @@ export default function SwitchAccountScreen() {
       switchAccount(account.id);
       setBusyAccountId(null);
       const target = getReturnToHref(returnTo);
-      log.nav.debug('switch-account choose: replace returnTo + dismissAll', { accountId, returnTo, target });
-      router.replace(target);
+      log.nav.debug('switch-account choose: dismissAll + replace returnTo', { accountId, returnTo, target });
       router.dismissAll();
+      router.replace(target);
     } catch (selectionError) {
       if (isAuthRecoveryRequired(selectionError)) {
         if (selectionError.recoveryKind === 'interactiveLoginRequired') {

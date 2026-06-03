@@ -1,14 +1,22 @@
 import { Redirect, router, useFocusEffect } from 'expo-router';
+import Constants from 'expo-constants';
+import { openBrowserAsync, WebBrowserPresentationStyle } from 'expo-web-browser';
 import React from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Switch } from 'react-native';
 
 import { ErrorBanner } from '@/components/error-banner';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useUpdateCheck } from '@/hooks/use-update-check';
 import { getAccountLabel } from '@/lib/account';
 import { isAuthRecoveryRequired } from '@/lib/auth-recovery';
+import {
+  registerFavoriteStoreAlertTask,
+  requestFavoriteStoreAlertPermission,
+  unregisterFavoriteStoreAlertTask,
+} from '@/lib/favorite-store-alerts';
 import { log } from '@/lib/logger';
 import {
   getLoginHref,
@@ -17,6 +25,7 @@ import {
 } from '@/lib/navigation';
 import { fetchProfileSnapshot } from '@/lib/valorant-api';
 import { useAccountStore } from '@/stores/account-store';
+import { useFavoriteStoreAlertStore } from '@/stores/favorite-store-alert-store';
 
 function switchAccount() {
   router.push(getSwitchAccountHref({ reason: 'choose', returnTo: '/profile' }));
@@ -31,18 +40,22 @@ export default function ProfileScreen() {
   // const accountStatus = account?.status;
   const setProfileSnapshot = useAccountStore((state) => state.setProfileSnapshot);
   const removeAccount = useAccountStore((state) => state.removeAccount);
+  const { latestVersion, releaseUrl } = useUpdateCheck();
+  const favoriteStoreAlertsEnabled = useFavoriteStoreAlertStore((state) => state.enabled);
+  const setFavoriteStoreAlertsEnabled = useFavoriteStoreAlertStore((state) => state.setEnabled);
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [updatingAlerts, setUpdatingAlerts] = React.useState(false);
 
-  const routeToAuthRecovery = (accountId: string) => {
+  const routeToAuthRecovery = React.useCallback((accountId: string) => {
     if (accounts.length > 1) {
       router.replace(getSwitchAccountHref({ reason: 'reauthFailed', accountId, returnTo: '/profile' }));
       return;
     }
     router.replace(getLoginHref({ mode: 'reauth', accountId, returnTo: '/profile' }));
-  };
+  }, [accounts.length]);
 
-  const refreshProfile = async () => {
+  const refreshProfile = React.useCallback(async () => {
     const currentAccount = useAccountStore.getState().accounts.find((item) => item.id === activeAccountId);
     if (!currentAccount || currentAccount.status === 'needsReauth') {
       return;
@@ -66,11 +79,13 @@ export default function ProfileScreen() {
       }
       setRefreshing(false);
     }
-  };
+  }, [activeAccountId, routeToAuthRecovery, setProfileSnapshot]);
 
-  useFocusEffect(() => {
-    void refreshProfile();
-  });
+  useFocusEffect(
+    React.useCallback(() => {
+      void refreshProfile();
+    }, [refreshProfile]),
+  );
 
   if (!account) {
     return <Redirect href="/" />;
@@ -89,14 +104,14 @@ export default function ProfileScreen() {
             const nextActiveAccountId = await removeAccount(account.id);
             if (!nextActiveAccountId) {
               const target = getOnboardingHref();
-              log.nav.debug('profile logout: replace onboarding + dismissAll', { target });
-              router.replace(target);
+              log.nav.debug('profile logout: dismissAll + replace onboarding', { target });
               router.dismissAll();
+              router.replace(target);
             } else {
               const target = getSwitchAccountHref({ reason: 'afterRemoval', returnTo: '/profile' });
-              log.nav.debug('profile logout: replace switch-account + dismissAll', { target, nextActiveAccountId });
-              router.replace(target);
+              log.nav.debug('profile logout: dismissAll + replace switch-account', { target, nextActiveAccountId });
               router.dismissAll();
+              router.replace(target);
             }
           })();
         },
@@ -106,6 +121,39 @@ export default function ProfileScreen() {
 
   const reauthenticate = () => {
     router.push(getLoginHref({ mode: 'reauth', accountId: account.id, returnTo: '/profile' }));
+  };
+
+  const openRelease = () => {
+    if (!releaseUrl) return;
+    void openBrowserAsync(releaseUrl, {
+      presentationStyle: WebBrowserPresentationStyle.AUTOMATIC,
+    });
+  };
+
+  const toggleFavoriteStoreAlerts = async (enabled: boolean) => {
+    setUpdatingAlerts(true);
+    try {
+      if (enabled) {
+        const allowed = await requestFavoriteStoreAlertPermission();
+        if (!allowed) {
+          Alert.alert('Notifications unavailable', 'Allow notifications to enable Favorite store alerts.');
+          return;
+        }
+        setFavoriteStoreAlertsEnabled(true);
+        await registerFavoriteStoreAlertTask();
+        return;
+      }
+
+      setFavoriteStoreAlertsEnabled(false);
+      await unregisterFavoriteStoreAlertTask();
+    } catch (alertError) {
+      Alert.alert(
+        'Could not update alerts',
+        alertError instanceof Error ? alertError.message : 'Try again later.',
+      );
+    } finally {
+      setUpdatingAlerts(false);
+    }
   };
 
   return (
@@ -160,10 +208,61 @@ export default function ProfileScreen() {
             <MenuButton label="Switch Account" onPress={switchAccount} />
             <MenuButton label="Logout" destructive onPress={confirmLogout} />
           </ThemedView>
+
+          <ThemedView type="backgroundElement" style={styles.section}>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.sectionTitle}>
+              NOTIFICATIONS
+            </ThemedText>
+            <AlertToggleRow
+              enabled={favoriteStoreAlertsEnabled}
+              disabled={updatingAlerts}
+              onValueChange={toggleFavoriteStoreAlerts}
+            />
+          </ThemedView>
+
+          <ThemedView type="backgroundElement" style={styles.section}>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.sectionTitle}>
+              ABOUT
+            </ThemedText>
+            <VersionRow
+              currentVersion={Constants.expoConfig?.version ?? '0.0.0'}
+              latestVersion={latestVersion}
+              onPressLatest={openRelease}
+            />
+          </ThemedView>
         </ScrollView>
     </ThemedView>
   );
 
+}
+
+function VersionRow({
+  currentVersion,
+  latestVersion,
+  onPressLatest,
+}: {
+  currentVersion: string;
+  latestVersion: string | null;
+  onPressLatest: () => void;
+}) {
+  const theme = useTheme();
+  return (
+    <ThemedView type="backgroundElement" style={styles.row}>
+      <ThemedText type="small">Version</ThemedText>
+      <ThemedView type="backgroundElement" style={styles.versionValue}>
+        <ThemedText type="small" themeColor="textSecondary">
+          v{currentVersion}
+        </ThemedText>
+        {latestVersion ? (
+          <Pressable onPress={onPressLatest} hitSlop={8}>
+            <ThemedText type="small" style={{ color: theme.primary }}>
+              {`(v${latestVersion} Available)`}
+            </ThemedText>
+          </Pressable>
+        ) : null}
+      </ThemedView>
+    </ThemedView>
+  );
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
@@ -173,6 +272,35 @@ function InfoRow({ label, value }: { label: string; value: string }) {
       <ThemedText type="small" themeColor="textSecondary" style={styles.rowValue} numberOfLines={1}>
         {value}
       </ThemedText>
+    </ThemedView>
+  );
+}
+
+function AlertToggleRow({
+  enabled,
+  disabled,
+  onValueChange,
+}: {
+  enabled: boolean;
+  disabled: boolean;
+  onValueChange: (enabled: boolean) => void;
+}) {
+  const theme = useTheme();
+  return (
+    <ThemedView type="backgroundElement" style={styles.alertRow}>
+      <ThemedView type="backgroundElement" style={styles.alertCopy}>
+        <ThemedText type="small">Favorite store alerts</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          Notify when a favorite appears in your daily or accessory store.
+        </ThemedText>
+      </ThemedView>
+      <Switch
+        value={enabled}
+        disabled={disabled}
+        onValueChange={(value) => void onValueChange(value)}
+        trackColor={{ false: theme.backgroundSelected, true: theme.primary }}
+        thumbColor={theme.primaryForeground}
+      />
     </ThemedView>
   );
 }
@@ -217,6 +345,22 @@ const styles = StyleSheet.create({
   rowValue: {
     flex: 1,
     textAlign: 'right',
+  },
+  alertRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.three,
+  },
+  alertCopy: {
+    flex: 1,
+    gap: Spacing.one,
+  },
+  versionValue: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: Spacing.one,
   },
   menuButton: {
     paddingVertical: Spacing.two,
