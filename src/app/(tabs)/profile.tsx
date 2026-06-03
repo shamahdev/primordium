@@ -9,6 +9,7 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getAccountLabel } from '@/lib/account';
 import { isAuthRecoveryRequired } from '@/lib/auth-recovery';
+import { log } from '@/lib/logger';
 import {
   getLoginHref,
   getOnboardingHref,
@@ -87,9 +88,15 @@ export default function ProfileScreen() {
           void (async () => {
             const nextActiveAccountId = await removeAccount(account.id);
             if (!nextActiveAccountId) {
-              router.replace(getOnboardingHref());
+              const target = getOnboardingHref();
+              log.nav.debug('profile logout: replace onboarding + dismissAll', { target });
+              router.replace(target);
+              router.dismissAll();
             } else {
-              router.replace(getSwitchAccountHref({ reason: 'afterRemoval', returnTo: '/profile' }));
+              const target = getSwitchAccountHref({ reason: 'afterRemoval', returnTo: '/profile' });
+              log.nav.debug('profile logout: replace switch-account + dismissAll', { target, nextActiveAccountId });
+              router.replace(target);
+              router.dismissAll();
             }
           })();
         },

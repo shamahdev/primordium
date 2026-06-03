@@ -10,6 +10,7 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getAccountLabel } from '@/lib/account';
 import { isAuthRecoveryRequired } from '@/lib/auth-recovery';
+import { log } from '@/lib/logger';
 import {
   getLoginHref,
   getOnboardingHref,
@@ -52,7 +53,10 @@ export default function SwitchAccountScreen() {
       await ensureAccountSession(account);
       switchAccount(account.id);
       setBusyAccountId(null);
-      router.replace('/home');
+      const target = getReturnToHref(returnTo);
+      log.nav.debug('switch-account choose: replace returnTo + dismissAll', { accountId, returnTo, target });
+      router.replace(target);
+      router.dismissAll();
     } catch (selectionError) {
       if (isAuthRecoveryRequired(selectionError)) {
         if (selectionError.recoveryKind === 'interactiveLoginRequired') {
@@ -69,7 +73,14 @@ export default function SwitchAccountScreen() {
   };
 
   const cancel = () => {
-    router.replace(getReturnToHref(returnTo));
+    if (router.canGoBack()) {
+      log.nav.debug('switch-account cancel: back', { returnTo });
+      router.back();
+      return;
+    }
+    const fallback = getReturnToHref(returnTo);
+    log.nav.debug('switch-account cancel: replace fallback', { returnTo, fallback });
+    router.replace(fallback);
   };
 
   const routeToReauth = (accountId: string) => {

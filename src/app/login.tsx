@@ -8,10 +8,10 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { getAccountLabel, isValorantShard, type StoredAuthTokens, type StoredRiotAccount, type StoredRiotCookie } from '@/lib/account';
+import { log } from '@/lib/logger';
 import {
   getOnboardingHref,
   getReturnToHref,
-  getSwitchAccountHref,
   sanitizeReturnToRoute,
   type LoginMode,
 } from '@/lib/navigation';
@@ -51,15 +51,14 @@ export default function LoginScreen() {
   }
 
   const cancel = () => {
-    if (mode === 'reauth' && accounts.length > 1) {
-      router.replace(getSwitchAccountHref({ reason: 'choose', returnTo }));
+    if (router.canGoBack()) {
+      log.nav.debug('login cancel: back', { mode, returnTo });
+      router.back();
       return;
     }
-    if (mode === 'reauth') {
-      router.replace(getOnboardingHref());
-      return;
-    }
-    router.replace(accounts.length > 0 ? getReturnToHref(returnTo) : getOnboardingHref());
+    const fallback = accounts.length > 0 ? getReturnToHref(returnTo) : getOnboardingHref();
+    log.nav.debug('login cancel: replace fallback', { mode, returnTo, fallback });
+    router.replace(fallback);
   };
 
   const handleAuthenticated = async (result: {
@@ -94,7 +93,10 @@ export default function LoginScreen() {
     if (result.cookieCaptureFailed || result.cookies.length === 0) {
       Alert.alert('Login saved', 'Future silent sign-in may require another Riot login because cookies could not be saved.');
     }
-    router.replace(getReturnToHref(returnTo));
+    const target = getReturnToHref(returnTo);
+    log.nav.debug('login success: replace + dismissAll', { returnTo, target });
+    router.replace(target);
+    router.dismissAll();
   }
 
   async function handleReauthMismatch(result: {
