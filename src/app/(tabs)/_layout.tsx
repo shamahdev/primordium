@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
-import { MaterialTopTabNavigationEventMap, MaterialTopTabNavigationOptions, createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import { ParamListBase, TabNavigationState } from '@react-navigation/native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { MaterialTopTabNavigationEventMap, MaterialTopTabNavigationOptions, createMaterialTopTabNavigator } from "expo-router/js-top-tabs";
+import { ParamListBase, TabNavigationState } from "expo-router/react-navigation";
 import { withLayoutContext } from 'expo-router';
 import React from 'react';
 import { Platform, StyleSheet, useColorScheme, useWindowDimensions } from 'react-native';

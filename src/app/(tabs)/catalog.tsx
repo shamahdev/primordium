@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
-import { Redirect, router, useFocusEffect } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import React from 'react';
 import {
   ActivityIndicator,
@@ -21,6 +21,13 @@ import {
   getCosmeticCatalogItems,
   type CosmeticCatalogItem,
 } from '@/lib/valorant-store-assets';
+import {
+  getValorantCosmeticRarityIcon,
+  getValorantCosmeticRarityLabel,
+  getValorantCosmeticTypeLabel,
+  getValorantCosmeticTypePluralLabel,
+  VALORANT_COSMETIC_TYPE_ORDER,
+} from '@/lib/valorant-cosmetic-presentation';
 import { useAccountStore } from '@/stores/account-store';
 import { type FavoriteItem, useFavoriteStore } from '@/stores/favorite-store';
 
@@ -38,28 +45,23 @@ type CatalogListItem = CosmeticCatalogItem & {
   favoritedAt?: string;
 };
 
-const TYPE_ORDER: Exclude<CatalogFilter, 'all'>[] = ['skin', 'buddy', 'spray', 'card', 'title', 'flex'];
+const TYPE_ORDER = VALORANT_COSMETIC_TYPE_ORDER;
 
-const TYPE_LABELS: Record<CatalogFilter, string> = {
+const FILTER_LABELS: Record<CatalogFilter, string> = {
   all: 'All',
-  skin: 'Skins',
-  buddy: 'Buddies',
-  spray: 'Sprays',
-  card: 'Cards',
-  title: 'Titles',
-  flex: 'Flexes',
-};
-
-const TYPE_SINGULAR_LABELS: Record<CosmeticCatalogItem['itemType'], string> = {
-  skin: 'Skin',
-  buddy: 'Buddy',
-  spray: 'Spray',
-  card: 'Card',
-  title: 'Title',
-  flex: 'Flex',
+  skin: getValorantCosmeticTypePluralLabel('skin'),
+  buddy: getValorantCosmeticTypePluralLabel('buddy'),
+  spray: getValorantCosmeticTypePluralLabel('spray'),
+  card: getValorantCosmeticTypePluralLabel('card'),
+  title: getValorantCosmeticTypePluralLabel('title'),
+  flex: getValorantCosmeticTypePluralLabel('flex'),
 };
 
 const FavoriteStarColor = '#FAD663';
+
+let catalogMemoryMode: CatalogMode = 'all';
+let catalogMemoryFilter: CatalogFilter = 'all';
+let catalogMemorySearch = '';
 
 export default function CatalogScreen() {
   const theme = useTheme();
@@ -67,9 +69,9 @@ export default function CatalogScreen() {
     state.accounts.find((item) => item.id === state.activeAccountId),
   );
   const [items, setItems] = React.useState<CatalogListItem[]>([]);
-  const [mode, setMode] = React.useState<CatalogMode>('all');
-  const [filter, setFilter] = React.useState<CatalogFilter>('all');
-  const [search, setSearch] = React.useState('');
+  const [mode, setMode] = React.useState<CatalogMode>(catalogMemoryMode);
+  const [filter, setFilter] = React.useState<CatalogFilter>(catalogMemoryFilter);
+  const [search, setSearch] = React.useState(catalogMemorySearch);
   const deferredMode = React.useDeferredValue(mode);
   const deferredFilter = React.useDeferredValue(filter);
   const deferredSearch = React.useDeferredValue(search);
@@ -77,32 +79,59 @@ export default function CatalogScreen() {
   const [error, setError] = React.useState<string | null>(null);
   const favoritesById = useFavoriteStore((state) => state.favoritesById);
 
-  const loadCatalog = React.useCallback(async (refresh = false) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const nextItems = await getCosmeticCatalogItems({ refresh });
-      setItems(sortCatalogItems(nextItems.map(toCatalogListItem)));
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Could not load cosmetic catalog.');
-    } finally {
-      setLoading(false);
+  const loadCatalog = React.useCallback(async (refresh = false, showLoading = true) => {
+    if (showLoading) {
+      setLoading(true);
+      setError(null);
     }
+
+    let nextError: string | null = null;
+    let nextItems: CatalogListItem[] | null = null;
+
+    try {
+      const catalogItems = await getCosmeticCatalogItems({ refresh });
+      nextItems = sortCatalogItems(catalogItems.map(toCatalogListItem));
+    } catch (loadError) {
+      nextError = loadError instanceof Error ? loadError.message : 'Could not load cosmetic catalog.';
+    }
+
+    if (nextItems) {
+      setItems(nextItems);
+    }
+    setError(nextError);
+    setLoading(false);
   }, []);
 
-  React.useEffect(() => {
-    void loadCatalog();
+  const retryCatalog = React.useCallback(() => {
+    void loadCatalog(true);
   }, [loadCatalog]);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      return () => {
-        setFilter('all');
-        setSearch('');
-        setMode('all');
-      };
-    }, []),
-  );
+  React.useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      let nextError: string | null = null;
+      let nextItems: CatalogListItem[] | null = null;
+
+      try {
+        const catalogItems = await getCosmeticCatalogItems({ refresh: false });
+        nextItems = sortCatalogItems(catalogItems.map(toCatalogListItem));
+      } catch (loadError) {
+        nextError = loadError instanceof Error ? loadError.message : 'Could not load cosmetic catalog.';
+      }
+
+      if (cancelled) return;
+      if (nextItems) {
+        setItems(nextItems);
+      }
+      setError(nextError);
+      setLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const itemsById = React.useMemo(() => new Map(items.map((item) => [item.id, item])), [items]);
   const favoriteItems = React.useMemo(
@@ -134,12 +163,15 @@ export default function CatalogScreen() {
     [],
   );
   const handleSearchChange = React.useCallback((text: string) => {
+    catalogMemorySearch = text;
     setSearch(text);
   }, []);
   const handleFilterChange = React.useCallback((type: CatalogFilter) => {
+    catalogMemoryFilter = type;
     setFilter(type);
   }, []);
   const handleModeChange = React.useCallback((nextMode: CatalogMode) => {
+    catalogMemoryMode = nextMode;
     setMode(nextMode);
   }, []);
 
@@ -149,7 +181,7 @@ export default function CatalogScreen() {
 
   return (
     <ThemedView style={styles.screen}>
-      {error ? <ErrorBanner message={error} actionLabel="Retry" onPress={() => loadCatalog(true)} /> : null}
+      {error ? <ErrorBanner message={error} actionLabel="Retry" onPress={retryCatalog} /> : null}
       <SectionList
         sections={sections}
         keyExtractor={(item) => item.id}
@@ -161,28 +193,37 @@ export default function CatalogScreen() {
               <ModeButton label="All Items" mode="all" selected={mode === 'all'} onPress={handleModeChange} />
               <ModeButton label="Favorites" mode="favorites" selected={mode === 'favorites'} onPress={handleModeChange} />
             </View>
-            <TextInput
-              value={search}
-              onChangeText={handleSearchChange}
-              placeholder="Search items or types"
-              placeholderTextColor={theme.textSecondary}
-              autoCapitalize="none"
-              autoCorrect={false}
-              clearButtonMode="while-editing"
-              style={[
-                styles.searchInput,
-                {
-                  color: theme.text,
-                  backgroundColor: theme.backgroundElement,
-                  borderColor: theme.backgroundSelected,
-                },
-              ]}
-            />
+            <View style={styles.searchRow}>
+              <TextInput
+                value={search}
+                onChangeText={handleSearchChange}
+                placeholder="Search items or types"
+                placeholderTextColor={theme.textSecondary}
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={[
+                  styles.searchInput,
+                  {
+                    color: theme.text,
+                    backgroundColor: theme.backgroundElement,
+                    borderColor: theme.backgroundSelected,
+                  },
+                ]}
+              />
+              {search.length > 0 ? (
+                <Pressable
+                  onPress={() => handleSearchChange('')}
+                  style={styles.searchClear}
+                >
+                  <Ionicons name="close-circle" size={18} color={theme.textSecondary} />
+                </Pressable>
+              ) : null}
+            </View>
             <View style={styles.chipRow}>
-              {(Object.keys(TYPE_LABELS) as CatalogFilter[]).map((type) => (
+              {(Object.keys(FILTER_LABELS) as CatalogFilter[]).map((type) => (
                 <FilterChip
                   key={type}
-                  label={TYPE_LABELS[type]}
+                  label={FILTER_LABELS[type]}
                   selected={filter === type}
                   type={type}
                   onPress={handleFilterChange}
@@ -204,7 +245,7 @@ export default function CatalogScreen() {
                 <ThemedText themeColor="textSecondary">Loading catalog...</ThemedText>
               </>
             ) : error ? (
-              <PrimaryButton label="Retry" onPress={() => loadCatalog(true)} />
+              <PrimaryButton label="Retry" onPress={retryCatalog} />
             ) : mode === 'favorites' && favoriteItems.length === 0 ? (
               <View style={styles.emptyStateText}>
                 <ThemedText type="smallBold">No favorites yet</ThemedText>
@@ -241,9 +282,9 @@ const CatalogRow = React.memo(function CatalogRow({
   isFavorite: boolean;
 }) {
   const theme = useTheme();
-  const typeLabel = getTypeLabel(item.itemType);
-  const rarityLabel = item.rarity ? getRarityLabel(item.rarity) : null;
-  const rarityIcon = item.rarity ? getRarityIcon(item.rarity) : null;
+  const typeLabel = getValorantCosmeticTypeLabel(item.itemType);
+  const rarityLabel = item.rarity ? getValorantCosmeticRarityLabel(item.rarity) : null;
+  const rarityIcon = item.rarity ? getValorantCosmeticRarityIcon(item.rarity) : null;
 
   const openItem = React.useCallback(() => {
     router.push({
@@ -385,12 +426,12 @@ function getCatalogSections(
 
   if (filter !== 'all') {
     const data = sectionsByType.get(filter) ?? [];
-    return data.length > 0 ? [{ key: filter, title: TYPE_LABELS[filter], data }] : [];
+    return data.length > 0 ? [{ key: filter, title: FILTER_LABELS[filter], data }] : [];
   }
 
   return TYPE_ORDER.map((type) => ({
     key: type,
-    title: TYPE_LABELS[type],
+    title: FILTER_LABELS[type],
     data: sectionsByType.get(type) ?? [],
   })).filter((section) => section.data.length > 0);
 }
@@ -414,28 +455,8 @@ function sortFavoriteItems(items: CatalogListItem[]) {
 function toCatalogListItem(item: CosmeticCatalogItem | FavoriteItem): CatalogListItem {
   return {
     ...item,
-    searchText: `${item.title} ${item.itemType} ${TYPE_LABELS[item.itemType]}`.toLowerCase(),
+    searchText: `${item.title} ${item.itemType} ${FILTER_LABELS[item.itemType]}`.toLowerCase(),
   };
-}
-
-function getTypeLabel(type: CosmeticCatalogItem['itemType']) {
-  return TYPE_SINGULAR_LABELS[type];
-}
-
-function getRarityLabel(rarity: NonNullable<CosmeticCatalogItem['rarity']>) {
-  return rarity.charAt(0).toUpperCase() + rarity.slice(1);
-}
-
-function getRarityIcon(rarity: NonNullable<CosmeticCatalogItem['rarity']>) {
-  const icons = {
-    select: require('@/assets/images/valorant/skin-rarity/select.png'),
-    deluxe: require('@/assets/images/valorant/skin-rarity/deluxe.png'),
-    premium: require('@/assets/images/valorant/skin-rarity/premium.png'),
-    exclusive: require('@/assets/images/valorant/skin-rarity/exclusive.png'),
-    ultra: require('@/assets/images/valorant/skin-rarity/ultra.png'),
-  } as const;
-
-  return icons[rarity];
 }
 
 const styles = StyleSheet.create({
@@ -452,12 +473,21 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     paddingBottom: Spacing.three,
   },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   searchInput: {
+    flex: 1,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: Spacing.one,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     fontSize: 16,
+  },
+  searchClear: {
+    position: 'absolute',
+    right: Spacing.two,
   },
   chipRow: {
     flexDirection: 'row',

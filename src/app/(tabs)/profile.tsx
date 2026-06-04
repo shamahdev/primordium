@@ -1,8 +1,8 @@
-import { Redirect, router, useFocusEffect } from 'expo-router';
 import Constants from 'expo-constants';
+import { Redirect, router, useFocusEffect } from 'expo-router';
 import { openBrowserAsync, WebBrowserPresentationStyle } from 'expo-web-browser';
 import React from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Switch } from 'react-native';
+import { ActivityIndicator, Alert, AppState, Platform, Pressable, ScrollView, StyleSheet, Switch } from 'react-native';
 
 import { ErrorBanner } from '@/components/error-banner';
 import { ThemedText } from '@/components/themed-text';
@@ -11,21 +11,19 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useUpdateCheck } from '@/hooks/use-update-check';
 import { getAccountLabel } from '@/lib/account';
-import { isAuthRecoveryRequired } from '@/lib/auth-recovery';
+import { getBatteryOptimizationStatus, requestIgnoreBatteryOptimizations } from '@/lib/android-battery-optimization';
 import {
   registerFavoriteStoreAlertTask,
   requestFavoriteStoreAlertPermission,
   unregisterFavoriteStoreAlertTask,
 } from '@/lib/favorite-store-alerts';
 import { log } from '@/lib/logger';
-import {
-  getLoginHref,
-  getOnboardingHref,
-  getSwitchAccountHref,
-} from '@/lib/navigation';
+import { getLoginHref, getOnboardingHref, getSwitchAccountHref } from '@/lib/navigation';
+import { getStoredRiotSessionRecoveryAction } from '@/lib/stored-riot-session';
 import { fetchProfileSnapshot } from '@/lib/valorant-api';
 import { useAccountStore } from '@/stores/account-store';
 import { useFavoriteStoreAlertStore } from '@/stores/favorite-store-alert-store';
+
 
 function switchAccount() {
   router.push(getSwitchAccountHref({ reason: 'choose', returnTo: '/profile' }));
@@ -45,15 +43,13 @@ export default function ProfileScreen() {
   const setFavoriteStoreAlertsEnabled = useFavoriteStoreAlertStore((state) => state.setEnabled);
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [ignoringBatteryOptimizations, setIgnoringBatteryOptimizations] = React.useState(true);
   const [updatingAlerts, setUpdatingAlerts] = React.useState(false);
 
-  const routeToAuthRecovery = React.useCallback((accountId: string) => {
-    if (accounts.length > 1) {
-      router.replace(getSwitchAccountHref({ reason: 'reauthFailed', accountId, returnTo: '/profile' }));
-      return;
-    }
-    router.replace(getLoginHref({ mode: 'reauth', accountId, returnTo: '/profile' }));
-  }, [accounts.length]);
+  const checkBatteryOptimizationStatus = React.useCallback(async () => {
+    const ignoring = await getBatteryOptimizationStatus();
+    setIgnoringBatteryOptimizations(ignoring);
+  }, []);
 
   const refreshProfile = React.useCallback(async () => {
     const currentAccount = useAccountStore.getState().accounts.find((item) => item.id === activeAccountId);
@@ -68,18 +64,36 @@ export default function ProfileScreen() {
       setProfileSnapshot(currentAccount.id, snapshot);
       setRefreshing(false);
     } catch (refreshError) {
-      if (isAuthRecoveryRequired(refreshError)) {
-        if (refreshError.recoveryKind === 'temporaryAuthUnavailable') {
-          setError(refreshError.message);
-        } else {
-          routeToAuthRecovery(currentAccount.id);
-        }
+      const recoveryAction = getStoredRiotSessionRecoveryAction({
+        error: refreshError,
+        accountId: currentAccount.id,
+        accountCount: accounts.length,
+        returnTo: '/profile',
+        fallbackMessage: 'Could not refresh profile.',
+      });
+      if (recoveryAction.kind === 'reauth') {
+        router.replace(recoveryAction.href);
       } else {
-        setError(refreshError instanceof Error ? refreshError.message : 'Could not refresh profile.');
+        setError(recoveryAction.message);
       }
       setRefreshing(false);
     }
-  }, [activeAccountId, routeToAuthRecovery, setProfileSnapshot]);
+  }, [accounts.length, activeAccountId, setProfileSnapshot]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      void checkBatteryOptimizationStatus();
+    }, [checkBatteryOptimizationStatus]),
+  );
+
+  React.useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        void checkBatteryOptimizationStatus();
+      }
+    });
+    return () => subscription.remove();
+  }, [checkBatteryOptimizationStatus]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -218,6 +232,9 @@ export default function ProfileScreen() {
               disabled={updatingAlerts}
               onValueChange={toggleFavoriteStoreAlerts}
             />
+            {favoriteStoreAlertsEnabled && Platform.OS === 'android' && !ignoringBatteryOptimizations ? (
+              <BatteryOptimizationCard onPress={() => { void requestIgnoreBatteryOptimizations(); }} />
+            ) : null}
           </ThemedView>
 
           <ThemedView type="backgroundElement" style={styles.section}>
@@ -305,6 +322,26 @@ function AlertToggleRow({
   );
 }
 
+function BatteryOptimizationCard({ onPress }: { onPress: () => void }) {
+  const theme = useTheme();
+  return (
+    <ThemedView
+      type="backgroundSelected"
+      style={[styles.batteryCard, { borderColor: theme.backgroundSelected }]}
+    >
+      <ThemedText type="small" themeColor="textSecondary">
+        Background checks may be delayed if Android restricts Primordium in the background.
+        Allow unrestricted battery usage for more reliable alerts.
+      </ThemedText>
+      <Pressable onPress={onPress} style={({ pressed }) => [styles.batteryButton, pressed && styles.pressed]}>
+        <ThemedText type="small" style={{ color: theme.primary }}>
+          Allow unrestricted battery
+        </ThemedText>
+      </Pressable>
+    </ThemedView>
+  );
+}
+
 function MenuButton({ label, destructive, onPress }: { label: string; destructive?: boolean; onPress: () => void }) {
   const theme = useTheme();
   return (
@@ -355,6 +392,20 @@ const styles = StyleSheet.create({
   alertCopy: {
     flex: 1,
     gap: Spacing.one,
+  },
+  batteryCard: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Spacing.one,
+    padding: Spacing.three,
+    gap: Spacing.two,
+  },
+  batteryActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: Spacing.three,
+  },
+  batteryButton: {
+    paddingVertical: Spacing.one,
   },
   versionValue: {
     flex: 1,

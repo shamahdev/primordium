@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -9,18 +9,21 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import type { StoreItemRarity } from '@/lib/account';
+import type { StoreCurrency, StoreItemRarity } from '@/lib/account';
+import { getStoreItemDetail, type StoreItemDetailModel } from '@/lib/store-item-detail';
 import {
-  getCanonicalCosmeticCatalogItem,
+  getValorantCosmeticRarityIcon,
+  getValorantStoreCurrencyIcon,
+} from '@/lib/valorant-cosmetic-presentation';
+import {
   getSkinDetailAsset,
-  getStoreItemAsset,
   type CosmeticCatalogItem,
   type SkinDetailAsset,
   type SkinDetailChroma,
   type SkinDetailLevel,
 } from '@/lib/valorant-store-assets';
 import { useFavoriteStore } from '@/stores/favorite-store';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type StoreItemParams = {
   itemAssetId: string;
@@ -47,7 +50,8 @@ export default function StoreItemScreen() {
 
 function SkinDetailView({ params }: { params: StoreItemParams }) {
   const theme = useTheme();
-  const favoriteItem = useResolvedFavoriteItem(params);
+  const detailRequest = useStoreItemDetailRequest(params);
+  const [detailModel, setDetailModel] = React.useState<StoreItemDetailModel | null>(null);
   const [skinDetail, setSkinDetail] = React.useState<SkinDetailAsset | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [selectedChromaIndex, setSelectedChromaIndex] = React.useState(0);
@@ -56,18 +60,21 @@ function SkinDetailView({ params }: { params: StoreItemParams }) {
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
-      const detail = await getSkinDetailAsset(params.itemAssetId);
+      const [detail, model] = await Promise.all([
+        getSkinDetailAsset(params.itemAssetId),
+        getStoreItemDetail(detailRequest),
+      ]);
       if (!cancelled) {
         setSkinDetail(detail ?? null);
+        setDetailModel(model);
         setLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [params.itemAssetId]);
+  }, [detailRequest, params.itemAssetId]);
 
   const selectedChroma = skinDetail?.chromas[selectedChromaIndex];
   const heroImageUrl = selectedChroma?.fullRender ?? selectedChroma?.displayIcon ?? skinDetail?.displayIcon;
-  const showPrice = shouldShowPrice(params);
 
   const handleChromaSelect = (index: number) => {
     setSelectedChromaIndex(index);
@@ -94,7 +101,7 @@ function SkinDetailView({ params }: { params: StoreItemParams }) {
     return (
       <ThemedView style={styles.screen}>
         <SafeAreaView style={styles.safeArea}>
-          <Header title={params.title} favoriteItem={favoriteItem} />
+          <Header title={params.title} />
           <View style={styles.centered}>
             <ThemedText themeColor="textSecondary">Skin detail unavailable</ThemedText>
           </View>
@@ -123,9 +130,9 @@ function SkinDetailView({ params }: { params: StoreItemParams }) {
     <ThemedView style={styles.screen}>
       <SafeAreaView style={styles.safeArea}>
 
-      <Header title={params.title} favoriteItem={favoriteItem} />
+      <Header title={detailModel?.title ?? params.title} />
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       >
@@ -144,11 +151,11 @@ function SkinDetailView({ params }: { params: StoreItemParams }) {
         <View style={styles.titleRow}>
           <View style={styles.titleBlock}>
             <ThemedText type="subtitle" numberOfLines={2}>{skinDetail.title}</ThemedText>
-            {showPrice ? (
+            {detailModel?.price ? (
               <PriceDisplay
-                amount={params.priceAmount!}
-                currency={params.priceCurrency!}
-                rarity={params.rarity as StoreItemRarity | undefined}
+                amount={detailModel.price.amount}
+                currency={detailModel.price.currency}
+                rarity={detailModel.price.rarity}
               />
             ) : null}
           </View>
@@ -185,67 +192,51 @@ function SkinDetailView({ params }: { params: StoreItemParams }) {
           </View>
         )}
       </ScrollView>
+        <FavoriteFab favoriteItem={detailModel?.favoriteTarget} />
       </SafeAreaView>
     </ThemedView>
   );
 }
 
-type DetailState = {
-  imageUrl?: string;
-  largeImageUrl?: string;
-  wideImageUrl?: string;
-  animationUrl?: string;
-  loading: boolean;
-};
-
 function SimpleDetailView({ params }: { params: StoreItemParams }) {
-  const favoriteItem = useResolvedFavoriteItem(params);
-  const [state, setState] = React.useReducer(
-    (prev: DetailState, next: Partial<DetailState>) => ({ ...prev, ...next }),
-    { loading: true },
-  );
+  const detailRequest = useStoreItemDetailRequest(params);
+  const [detailModel, setDetailModel] = React.useState<StoreItemDetailModel | null>(null);
+  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
-      const asset = await getStoreItemAsset(params.itemAssetId);
+      const model = await getStoreItemDetail(detailRequest);
       if (!cancelled) {
-        setState({
-          imageUrl: asset?.imageUrl,
-          largeImageUrl: asset?.largeImageUrl,
-          wideImageUrl: asset?.wideImageUrl,
-          animationUrl: asset?.animationUrl,
-          loading: false,
-        });
+        setDetailModel(model);
+        setLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [params.itemAssetId]);
+  }, [detailRequest]);
 
-  const isCard = params.itemType === 'card';
-  const isTitle = params.itemType === 'title';
-  const heroSource = state.animationUrl ?? state.largeImageUrl ?? state.imageUrl;
-  const showPrice = shouldShowPrice(params);
+  const title = detailModel?.title ?? params.title;
 
   return (
     <ThemedView style={styles.screen}>
-      <Header title={params.title} favoriteItem={favoriteItem} />
-      <ScrollView
-        contentContainerStyle={styles.content}
+      <SafeAreaView style={styles.safeArea}>
+        <Header title={title} />
+        <ScrollView
+          contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       >
-        {state.loading ? (
+        {loading ? (
           <View style={styles.heroContainer}>
             <ActivityIndicator />
           </View>
-        ) : isTitle ? (
-          <TitlePreview title={params.title} />
-        ) : isCard && state.imageUrl && state.wideImageUrl && state.largeImageUrl ? (
-          <CardArtGrid displayIcon={state.imageUrl} wideArt={state.wideImageUrl} largeArt={state.largeImageUrl} />
-        ) : heroSource ? (
+        ) : detailModel?.isTitle ? (
+          <TitlePreview title={title} />
+        ) : detailModel?.isCard && detailModel.imageUrl && detailModel.wideImageUrl && detailModel.largeImageUrl ? (
+          <CardArtGrid displayIcon={detailModel.imageUrl} wideArt={detailModel.wideImageUrl} largeArt={detailModel.largeImageUrl} />
+        ) : detailModel?.heroSource ? (
           <View style={styles.heroContainer}>
-            <Image source={heroSource} contentFit="contain" style={styles.heroImage} autoplay={true} />
+            <Image source={detailModel.heroSource} contentFit="contain" style={styles.heroImage} autoplay={true} />
           </View>
         ) : (
           <View style={styles.heroContainer}>
@@ -256,18 +247,20 @@ function SimpleDetailView({ params }: { params: StoreItemParams }) {
         )}
         <View style={styles.titleRow}>
           <View style={styles.titleBlock}>
-            <ThemedText type="subtitle" numberOfLines={2}>{params.title}</ThemedText>
-            {isTitle ? <ThemedText themeColor="textSecondary">Player Title</ThemedText> : null}
-            {showPrice ? (
+            <ThemedText type="subtitle" numberOfLines={2}>{title}</ThemedText>
+            {detailModel?.isTitle ? <ThemedText themeColor="textSecondary">Player Title</ThemedText> : null}
+            {detailModel?.price ? (
               <PriceDisplay
-                amount={params.priceAmount!}
-                currency={params.priceCurrency!}
-                rarity={params.rarity as StoreItemRarity | undefined}
+                amount={detailModel.price.amount}
+                currency={detailModel.price.currency}
+                rarity={detailModel.price.rarity}
               />
             ) : null}
           </View>
         </View>
       </ScrollView>
+        <FavoriteFab favoriteItem={detailModel?.favoriteTarget} />
+      </SafeAreaView>
     </ThemedView>
   );
 }
@@ -303,35 +296,12 @@ function CardArtGrid({ displayIcon, wideArt, largeArt }: { displayIcon: string; 
   );
 }
 
-function Header({ title, favoriteItem }: { title: string; favoriteItem?: CosmeticCatalogItem | null }) {
+function Header({ title }: { title: string }) {
   const theme = useTheme();
-  const favoritesById = useFavoriteStore((state) => state.favoritesById);
-  const toggleFavorite = useFavoriteStore((state) => state.toggleFavorite);
-  const isFavorite = favoriteItem ? !!favoritesById[favoriteItem.id] : false;
-
-  const handleFavoritePress = () => {
-    if (favoriteItem) {
-      toggleFavorite(favoriteItem);
-    }
-  };
 
   return (
     <View style={styles.header}>
       <View style={{ flex: 1 }} />
-      {favoriteItem ? (
-        <Pressable
-          onPress={handleFavoritePress}
-          hitSlop={12}
-          accessibilityRole="button"
-          accessibilityLabel={isFavorite ? 'Remove favorite' : 'Add favorite'}
-          style={styles.headerButton}>
-          <Ionicons
-            name={isFavorite ? 'star' : 'star-outline'}
-            size={22}
-            color={isFavorite ? FavoriteStarColor : theme.text}
-          />
-        </Pressable>
-      ) : null}
       <Pressable onPress={() => router.back()} hitSlop={12} style={styles.closeButton}>
         <ThemedText type="default" style={{ color: theme.text, fontSize: 20 }}>✕</ThemedText>
       </Pressable>
@@ -339,52 +309,49 @@ function Header({ title, favoriteItem }: { title: string; favoriteItem?: Cosmeti
   );
 }
 
-function useResolvedFavoriteItem(params: StoreItemParams) {
-  const [favoriteItem, setFavoriteItem] = React.useState<CosmeticCatalogItem | null>(null);
-  const { itemAssetId, itemType, rarity, title } = params;
+function FavoriteFab({ favoriteItem }: { favoriteItem?: CosmeticCatalogItem | null }) {
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const favoritesById = useFavoriteStore((state) => state.favoritesById);
+  const toggleFavorite = useFavoriteStore((state) => state.toggleFavorite);
 
-  React.useEffect(() => {
-    let cancelled = false;
-    setFavoriteItem(null);
+  if (!favoriteItem) return null;
 
-    void (async () => {
-      const item = await getCanonicalCosmeticCatalogItem(itemAssetId);
-      if (!cancelled) {
-        setFavoriteItem(item ?? getFallbackFavoriteItem({ itemAssetId, itemType, rarity, title }));
-      }
-    })();
+  const isFavorite = !!favoritesById[favoriteItem.id];
 
-    return () => {
-      cancelled = true;
-    };
-  }, [itemAssetId, itemType, rarity, title]);
-
-  return favoriteItem;
+  return (
+    <Pressable
+      onPress={() => toggleFavorite(favoriteItem)}
+      style={[
+        styles.fab,
+        {
+          bottom: (insets.bottom || 24) + 24,
+          backgroundColor: theme.backgroundElement,
+        },
+      ]}
+      accessibilityRole="button"
+      accessibilityLabel={isFavorite ? 'Remove favorite' : 'Add favorite'}
+    >
+      <Ionicons
+        name={isFavorite ? 'star' : 'star-outline'}
+        size={24}
+        color={isFavorite ? FavoriteStarColor : theme.text}
+      />
+    </Pressable>
+  );
 }
 
-function getFallbackFavoriteItem(params: StoreItemParams): CosmeticCatalogItem | null {
-  if (!isCosmeticCatalogItemType(params.itemType)) return null;
-
-  return {
-    id: params.itemAssetId,
-    itemType: params.itemType,
-    title: params.title,
-    rarity: params.rarity as CosmeticCatalogItem['rarity'],
-  };
+function useStoreItemDetailRequest(params: StoreItemParams) {
+  const { itemAssetId, itemType, title, priceAmount, priceCurrency, rarity, source } = params;
+  return React.useMemo(
+    () => ({ itemAssetId, itemType, title, priceAmount, priceCurrency, rarity, source }),
+    [itemAssetId, itemType, priceAmount, priceCurrency, rarity, source, title],
+  );
 }
 
-function isCosmeticCatalogItemType(value: string): value is CosmeticCatalogItem['itemType'] {
-  return ['skin', 'buddy', 'spray', 'card', 'title', 'flex'].includes(value);
-}
-
-function PriceDisplay({ amount, currency, rarity }: { amount: string; currency: string; rarity?: StoreItemRarity }) {
-  const currencyIcon = currency === 'vp'
-    ? require('@/assets/images/valorant/vp.png')
-    : currency === 'kingdomCredits'
-      ? require('@/assets/images/valorant/kc.png')
-      : null;
-
-  const rarityIcon = rarity ? getRarityIcon(rarity) : null;
+function PriceDisplay({ amount, currency, rarity }: { amount: string; currency: StoreCurrency; rarity?: StoreItemRarity }) {
+  const currencyIcon = getValorantStoreCurrencyIcon(currency);
+  const rarityIcon = rarity ? getValorantCosmeticRarityIcon(rarity) : null;
 
   return (
     <View style={styles.priceRow}>
@@ -393,10 +360,6 @@ function PriceDisplay({ amount, currency, rarity }: { amount: string; currency: 
       {rarityIcon ? <Image source={rarityIcon} contentFit="contain" style={styles.rarityBadge} /> : null}
     </View>
   );
-}
-
-function shouldShowPrice(params: StoreItemParams) {
-  return params.source !== 'catalog' && !!params.priceAmount && !!params.priceCurrency;
 }
 
 function LevelRow({ level, index, isActive, onPlay }: { level: SkinDetailLevel; index: number; isActive: boolean; onPlay: () => void }) {
@@ -443,17 +406,6 @@ function getLevelLabel(level: SkinDetailLevel, index: number) {
   return undefined;
 }
 
-function getRarityIcon(rarity: StoreItemRarity) {
-  const icons = {
-    select: require('@/assets/images/valorant/skin-rarity/select.png'),
-    deluxe: require('@/assets/images/valorant/skin-rarity/deluxe.png'),
-    premium: require('@/assets/images/valorant/skin-rarity/premium.png'),
-    exclusive: require('@/assets/images/valorant/skin-rarity/exclusive.png'),
-    ultra: require('@/assets/images/valorant/skin-rarity/ultra.png'),
-  } as const;
-  return icons[rarity];
-}
-
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
@@ -487,10 +439,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  content: {
+  contentContainer: {
     padding: Spacing.four,
     gap: Spacing.four,
-    paddingBottom: Spacing.six,
+    paddingBottom: 80,
   },
   heroContainer: {
     width: '100%',
@@ -614,5 +566,19 @@ const styles = StyleSheet.create({
   },
   titlePreviewText: {
     textAlign: 'center',
+  },
+  fab: {
+    position: 'absolute',
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 6,
   },
 });

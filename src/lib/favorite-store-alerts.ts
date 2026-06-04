@@ -3,11 +3,11 @@ import * as Notifications from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
 import { Platform } from 'react-native';
 
-import { getCanonicalCosmeticCatalogItem } from '@/lib/valorant-store-assets';
+import { getFavoriteStoreAlertDecision } from '@/lib/favorite-store-alert-core';
 import { fetchStoreAlertOffersWithExistingTokens } from '@/lib/valorant-api';
 import { useAccountStore } from '@/stores/account-store';
-import { useFavoriteStoreAlertStore } from '@/stores/favorite-store-alert-store';
 import { useFavoriteStore } from '@/stores/favorite-store';
+import { useFavoriteStoreAlertStore } from '@/stores/favorite-store-alert-store';
 
 export const FAVORITE_STORE_ALERT_TASK = 'primordium.favorite-store-alert';
 const FAVORITE_STORE_ALERT_CHANNEL = 'favorite-store-alerts';
@@ -95,24 +95,22 @@ export async function runFavoriteStoreAlertCheck() {
     const offers = await fetchStoreAlertOffersWithExistingTokens(account);
     if (!offers) return;
 
-    const resetKey = `${getResetPeriodKey(offers.dailyResetAt)}.${getResetPeriodKey(offers.accessoryResetAt)}`;
-    if (alertStore.lastNotifiedByAccountId[account.id] === resetKey) return;
-
-    const matches = await getFavoriteOfferNames(
-      [...offers.dailyOffers, ...offers.accessoryOffers],
+    const decision = await getFavoriteStoreAlertDecision({
+      offers,
       favoritesById,
-    );
-    if (matches.length === 0) return;
+      lastNotifiedResetKey: alertStore.lastNotifiedByAccountId[account.id],
+    });
+    if (!decision) return;
 
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: matches.length === 1 ? 'Favorite item in Store' : 'Favorite items in Store',
-        body: formatFavoriteStoreAlertBody(matches),
+        title: decision.title,
+        body: decision.body,
         data: { url: '/home' },
       },
       trigger: null,
     });
-    alertStore.setLastNotified(account.id, resetKey);
+    alertStore.setLastNotified(account.id, decision.resetKey);
   } catch {
     // Favorite Store Alerts are best-effort. Background failures stay silent.
   }
@@ -128,41 +126,4 @@ async function hydrateStores() {
     useFavoriteStore.persist.rehydrate(),
     useFavoriteStoreAlertStore.persist.rehydrate(),
   ]);
-}
-
-async function getFavoriteOfferNames(
-  offers: { title: string; itemAssetId?: string }[],
-  favoritesById: Record<string, { title: string }>,
-) {
-  const names: string[] = [];
-  const seen = new Set<string>();
-
-  for (const offer of offers) {
-    if (!offer.itemAssetId) continue;
-    const catalogItem = await getCanonicalCosmeticCatalogItem(offer.itemAssetId);
-    const favorite = catalogItem ? favoritesById[catalogItem.id] : favoritesById[offer.itemAssetId];
-    if (!favorite || seen.has(favorite.title)) continue;
-
-    seen.add(favorite.title);
-    names.push(favorite.title);
-  }
-
-  return names;
-}
-
-function formatFavoriteStoreAlertBody(names: string[]) {
-  if (names.length === 1) {
-    return `${names[0]} is in your Store.`;
-  }
-
-  const [first, second] = names;
-  if (names.length === 2) {
-    return `${first} and ${second} are in your Store.`;
-  }
-
-  return `${first}, ${second} +${names.length - 2} more are in your Store.`;
-}
-
-function getResetPeriodKey(resetAt: string) {
-  return new Date(resetAt).toISOString().slice(0, 13);
 }

@@ -39,6 +39,7 @@ export type StoreItem = {
   rarity?: StoreItemRarity;
   price: StorePrice;
   itemAssetId?: string;
+  favoriteTargetId?: string;
 };
 
 export type StoreCarouselCard = {

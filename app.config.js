@@ -34,5 +34,9 @@ export default ({ config }) => ({
   android: {
     ...config.android,
     package: getUniqueIdentifier(),
+    permissions: [
+      ...(config.android?.permissions ?? []),
+      'android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS',
+    ],
   },
 });

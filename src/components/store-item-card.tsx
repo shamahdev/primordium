@@ -1,15 +1,17 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Colors, RarityColors, Spacing } from '@/constants/theme';
+import { Colors, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import type { StoreItem, StoreItemRarity } from '@/lib/account';
-import { getCanonicalCosmeticCatalogItem } from '@/lib/valorant-store-assets';
+import type { StoreItem } from '@/lib/account';
+import {
+  getValorantCosmeticRarityColor,
+  getValorantCosmeticRarityIcon,
+  getValorantStoreCurrencyIcon,
+} from '@/lib/valorant-cosmetic-presentation';
 import { useFavoriteStore } from '@/stores/favorite-store';
 
 type StoreItemCardProps = {
@@ -24,31 +26,13 @@ const FavoriteStarColor = '#FAD663';
 export function StoreItemCard({ item, onBeforeNavigate }: StoreItemCardProps) {
   const theme = useTheme();
   const favoritesById = useFavoriteStore((state) => state.favoritesById);
-  const [favoriteItemId, setFavoriteItemId] = React.useState<string | null>(null);
-  const currencyIcon = getCurrencyIcon(item.price.currency);
-  const rarityIcon = item.rarity ? getRarityIcon(item.rarity) : null;
-  const rarityColor = item.rarity ? RarityColors[item.rarity] : null;
+  const currencyIcon = getValorantStoreCurrencyIcon(item.price.currency);
+  const rarityIcon = item.rarity ? getValorantCosmeticRarityIcon(item.rarity) : null;
+  const rarityColor = item.rarity ? getValorantCosmeticRarityColor(item.rarity) : null;
   const isTappable = !NON_TAPPABLE_TYPES.includes(item.itemType) && !!item.itemAssetId;
   const isAccessory = ACCESSORY_TYPES.includes(item.itemType);
-  const isFavorite = favoriteItemId ? !!favoritesById[favoriteItemId] : false;
-
-  React.useEffect(() => {
-    let cancelled = false;
-    setFavoriteItemId(null);
-
-    if (!item.itemAssetId) return;
-
-    void (async () => {
-      const catalogItem = await getCanonicalCosmeticCatalogItem(item.itemAssetId!);
-      if (!cancelled) {
-        setFavoriteItemId(catalogItem?.id ?? item.itemAssetId ?? null);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [item.itemAssetId]);
+  const favoriteLookupId = item.favoriteTargetId ?? item.itemAssetId;
+  const isFavorite = favoriteLookupId ? !!favoritesById[favoriteLookupId] : false;
 
   const handlePress = () => {
     if (!isTappable) return;
@@ -84,11 +68,7 @@ export function StoreItemCard({ item, onBeforeNavigate }: StoreItemCardProps) {
       )}
 
       {rarityColor && (
-        <LinearGradient
-          colors={['transparent', `${rarityColor}99`]}
-          locations={[0.4, 1]}
-          style={styles.gradientOverlay}
-        />
+        <View style={[styles.rarityOverlay, { backgroundColor: `${rarityColor}99` }]} />
       )}
 
       {(item.price.discountPercent ?? 0) > 0 && (
@@ -136,30 +116,6 @@ export function StoreItemCard({ item, onBeforeNavigate }: StoreItemCardProps) {
   );
 }
 
-function getCurrencyIcon(currency: StoreItem['price']['currency']) {
-  if (currency === 'vp') {
-    return require('@/assets/images/valorant/vp.png');
-  }
-
-  if (currency === 'kingdomCredits') {
-    return require('@/assets/images/valorant/kc.png');
-  }
-
-  return null;
-}
-
-function getRarityIcon(rarity: StoreItemRarity) {
-  const icons = {
-    select: require('@/assets/images/valorant/skin-rarity/select.png'),
-    deluxe: require('@/assets/images/valorant/skin-rarity/deluxe.png'),
-    premium: require('@/assets/images/valorant/skin-rarity/premium.png'),
-    exclusive: require('@/assets/images/valorant/skin-rarity/exclusive.png'),
-    ultra: require('@/assets/images/valorant/skin-rarity/ultra.png'),
-  } as const;
-
-  return icons[rarity];
-}
-
 const styles = StyleSheet.create({
   card: {
     width: '100%',
@@ -188,10 +144,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  gradientOverlay: {
-    ...StyleSheet.absoluteFill,
-    width: '100%',
-    height: '100%',
+  rarityOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '55%',
   },
   textOverlay: {
     position: 'absolute',

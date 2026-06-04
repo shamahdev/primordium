@@ -9,7 +9,6 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getAccountLabel } from '@/lib/account';
-import { isAuthRecoveryRequired } from '@/lib/auth-recovery';
 import { log } from '@/lib/logger';
 import {
   getLoginHref,
@@ -18,6 +17,7 @@ import {
   sanitizeReturnToRoute,
   type SwitchReason,
 } from '@/lib/navigation';
+import { getStoredRiotSessionRecoveryAction } from '@/lib/stored-riot-session';
 import { ensureAccountSession } from '@/lib/valorant-api';
 import { useAccountStore } from '@/stores/account-store';
 
@@ -58,15 +58,18 @@ export default function SwitchAccountScreen() {
       router.dismissAll();
       router.replace(target);
     } catch (selectionError) {
-      if (isAuthRecoveryRequired(selectionError)) {
-        if (selectionError.recoveryKind === 'interactiveLoginRequired') {
-          routeToReauth(account.id);
-          setBusyAccountId(null);
-          return;
-        }
-        setError(selectionError.message);
+      const recoveryAction = getStoredRiotSessionRecoveryAction({
+        error: selectionError,
+        accountId: account.id,
+        accountCount: accounts.length,
+        returnTo,
+        fallbackMessage: 'Could not switch account.',
+        reauthMode: 'login',
+      });
+      if (recoveryAction.kind === 'reauth') {
+        router.replace(recoveryAction.href);
       } else {
-        setError(selectionError instanceof Error ? selectionError.message : 'Could not switch account.');
+        setError(recoveryAction.message);
       }
       setBusyAccountId(null);
     }

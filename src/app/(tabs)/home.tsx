@@ -8,9 +8,9 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { type StoreCarouselCard, type StoreItem } from '@/lib/account';
-import { isAuthRecoveryRequired } from '@/lib/auth-recovery';
 import { log } from '@/lib/logger';
-import { getLoginHref, getSwitchAccountHref } from '@/lib/navigation';
+import { getLoginHref } from '@/lib/navigation';
+import { getStoredRiotSessionRecoveryAction } from '@/lib/stored-riot-session';
 import { fetchProfileSnapshot, fetchStoreSnapshot } from '@/lib/valorant-api';
 import { useAccountStore } from '@/stores/account-store';
 import { type BottomSheetModal } from '@gorhom/bottom-sheet';
@@ -43,17 +43,6 @@ export default function AuthenticatedHomeScreen() {
   const [selectedSection, setSelectedSection] = React.useState<StoreCarouselCard | null>(null);
   const sheetRef = React.useRef<BottomSheetModal>(null);
   const navigatingFromSheet = React.useRef(false);
-
-  const routeToAuthRecovery = React.useCallback(
-    (accountId: string) => {
-      if (accounts.length > 1) {
-        router.replace(getSwitchAccountHref({ reason: 'reauthFailed', accountId, returnTo: '/home' }));
-        return;
-      }
-      router.replace(getLoginHref({ mode: 'reauth', accountId, returnTo: '/home' }));
-    },
-    [accounts.length],
-  );
 
   const refreshStore = React.useCallback(async () => {
     const currentAccount = useAccountStore.getState().accounts.find(
@@ -98,22 +87,22 @@ export default function AuthenticatedHomeScreen() {
       log.store.error('fetchStoreSnapshot FAILED', {
         name: refreshError instanceof Error ? refreshError.name : typeof refreshError,
         message: refreshError instanceof Error ? refreshError.message : String(refreshError),
-        isAuthRecovery: isAuthRecoveryRequired(refreshError),
-        recoveryKind: isAuthRecoveryRequired(refreshError) ? refreshError.recoveryKind : undefined,
-        reason: isAuthRecoveryRequired(refreshError) ? refreshError.reason : undefined,
       });
-      if (isAuthRecoveryRequired(refreshError)) {
-        if (refreshError.recoveryKind === 'temporaryAuthUnavailable') {
-          setError(refreshError.message);
-        } else {
-          routeToAuthRecovery(currentAccount.id);
-        }
+      const recoveryAction = getStoredRiotSessionRecoveryAction({
+        error: refreshError,
+        accountId: currentAccount.id,
+        accountCount: accounts.length,
+        returnTo: '/home',
+        fallbackMessage: 'Could not refresh store.',
+      });
+      if (recoveryAction.kind === 'reauth') {
+        router.replace(recoveryAction.href);
       } else {
-        setError(refreshError instanceof Error ? refreshError.message : 'Could not refresh store.');
+        setError(recoveryAction.message);
       }
       setRefreshing(false);
     }
-  }, [setStoreSnapshot, setProfileSnapshot, routeToAuthRecovery]);
+  }, [accounts.length, setStoreSnapshot, setProfileSnapshot]);
 
   useFocusEffect(
     React.useCallback(() => {
