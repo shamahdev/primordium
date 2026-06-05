@@ -2,6 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
+import type { ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
@@ -22,6 +23,11 @@ type StoreItemCardProps = {
 const NON_TAPPABLE_TYPES: StoreItem['itemType'][] = ['unknown'];
 const ACCESSORY_TYPES: StoreItem['itemType'][] = ['buddy', 'spray', 'card', 'title', 'flex'];
 const FavoriteStarColor = '#FAD663';
+
+const getRarityGradientStyle = (color: string) =>
+  ({
+    experimental_backgroundImage: `linear-gradient(180deg, transparent 0%, ${color}99 100%)`,
+  }) as unknown as ViewStyle;
 
 export function StoreItemCard({ item, onBeforeNavigate }: StoreItemCardProps) {
   const theme = useTheme();
@@ -67,9 +73,7 @@ export function StoreItemCard({ item, onBeforeNavigate }: StoreItemCardProps) {
         </View>
       )}
 
-      {rarityColor && (
-        <View style={[styles.rarityOverlay, { backgroundColor: `${rarityColor}99` }]} />
-      )}
+      {rarityColor && <View style={[styles.rarityOverlay, getRarityGradientStyle(rarityColor)]} />}
 
       {(item.price.discountPercent ?? 0) > 0 && (
         <View style={[styles.discountBadge, { backgroundColor: theme.primary }]}>
@@ -150,6 +154,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '55%',
+    zIndex: 1,
   },
   textOverlay: {
     position: 'absolute',
