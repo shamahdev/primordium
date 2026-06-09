@@ -34,6 +34,7 @@ export type RiotStorefrontResponse = {
     Bundle: {
       ID: string;
       DataAssetID: string;
+      CurrencyID: string;
       Items: {
         Item: {
           ItemTypeID: string;
@@ -44,7 +45,12 @@ export type RiotStorefrontResponse = {
         CurrencyID: string;
         DiscountPercent: number;
         DiscountedPrice: number;
+        IsPromoItem: boolean;
       }[];
+      TotalBaseCost: Record<string, number> | null;
+      TotalDiscountedCost: Record<string, number> | null;
+      TotalDiscountPercent: number;
+      WholesaleOnly: boolean;
     };
     BundleRemainingDurationInSeconds: number;
   };
@@ -136,22 +142,24 @@ async function buildFeaturedBundleCard(featuredBundle: RiotStorefrontResponse['F
         buildStoreItem({
           id: `${featuredBundle.Bundle.ID}.${index}`,
           reward: { ItemID: item.Item.ItemID, ItemTypeID: item.Item.ItemTypeID, Quantity: item.Item.Amount },
-          cost: { [item.CurrencyID]: item.DiscountedPrice },
+          cost: { [item.CurrencyID]: item.BasePrice },
           originalAmount: item.BasePrice,
-          discountPercent: item.DiscountPercent,
         }),
       ),
     ),
   ]);
 
+  const price = buildBundlePrice(featuredBundle.Bundle);
+
   return {
     id: featuredBundle.Bundle.ID,
-    title: bundleAsset?.title ?? 'Featured Bundle',
-    subtitle: `${items.length} item${items.length === 1 ? '' : 's'}`,
+    title: bundleAsset?.title ? `${bundleAsset.title} Bundle` : 'Featured Bundle',
+    subtitle: price ? '' : `${items.length} item${items.length === 1 ? '' : 's'}`,
     imageUrl: bundleAsset?.imageUrl ?? items[0]?.imageUrl,
     section: 'featuredBundle',
     expiresAt: getExpiresAt(featuredBundle.BundleRemainingDurationInSeconds),
     items,
+    price,
   };
 }
 
@@ -282,6 +290,24 @@ function getStoreCurrency(currencyId?: string): StorePrice['currency'] {
   }
 
   return 'unknown';
+}
+
+function buildBundlePrice(
+  bundle: RiotStorefrontResponse['FeaturedBundle']['Bundle'],
+): StorePrice | undefined {
+  if (!bundle.TotalDiscountedCost || !bundle.TotalBaseCost) {
+    return undefined;
+  }
+
+  const [currencyId, amount] = Object.entries(bundle.TotalDiscountedCost)[0] ?? [undefined, 0];
+  const [, originalAmount] = Object.entries(bundle.TotalBaseCost)[0] ?? [undefined, 0];
+
+  return {
+    currency: getStoreCurrency(currencyId),
+    amount,
+    originalAmount: originalAmount > amount ? originalAmount : undefined,
+    discountPercent: bundle.TotalDiscountPercent > 0 ? bundle.TotalDiscountPercent : undefined,
+  };
 }
 
 function getExpiresAt(durationSeconds: number) {

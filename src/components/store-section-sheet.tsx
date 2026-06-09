@@ -38,8 +38,8 @@ export function StoreSectionSheet({ section, onDismiss, onBeforeNavigate, ref }:
       >
         {section ? (
           <View style={styles.header}>
-            <ThemedText type="subtitle">{section.title}</ThemedText>
-            <ThemedText >({section.subtitle})</ThemedText>
+            <ThemedText type="subtitle">{section.title.toUpperCase()}</ThemedText>
+            {/* <ThemedText >({section.subtitle})</ThemedText> */}
             <StoreResetTimer expiresAt={section.expiresAt} prefix='Leave in' />
           </View>
         ) : null}

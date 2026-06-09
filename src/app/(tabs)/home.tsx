@@ -12,6 +12,7 @@ import { log } from '@/lib/logger';
 import { getLoginHref } from '@/lib/navigation';
 import { getStoredRiotSessionRecoveryAction } from '@/lib/stored-riot-session';
 import { fetchProfileSnapshot, fetchStoreSnapshot } from '@/lib/valorant-api';
+import { getValorantStoreCurrencyIcon } from '@/lib/valorant-cosmetic-presentation';
 import { useAccountStore } from '@/stores/account-store';
 import { type BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Image } from 'expo-image';
@@ -294,6 +295,8 @@ function BundleCarouselCard({
   card: StoreCarouselCard;
   onPress: (card: StoreCarouselCard) => void;
 }) {
+  const theme = useTheme();
+
   return (
     <Pressable
       onPress={() => onPress(card)}
@@ -312,7 +315,23 @@ function BundleCarouselCard({
           <ThemedText type="smallBold" style={styles.bundleTitle} numberOfLines={2}>
             {card.title.toUpperCase()}
           </ThemedText>
-          <StoreResetTimer expiresAt={card.expiresAt} prefix="Leave in" />
+          {card.price ? (
+            <View style={styles.bundlePriceRow}>
+              {card.price.discountPercent && card.price.discountPercent > 0 && card.price.originalAmount ? (
+                <ThemedText type="xsmall" style={styles.bundleOriginalPrice}>
+                  {card.price.originalAmount.toLocaleString()}
+                </ThemedText>
+              ) : null}
+              <ThemedText type="smallBold" style={styles.bundlePrice}>
+                {card.price.amount.toLocaleString()}
+              </ThemedText>
+              <Image
+                source={getValorantStoreCurrencyIcon(card.price.currency)}
+                contentFit="contain"
+                style={styles.bundleCurrencyIcon}
+              />
+            </View>
+          ) : null}
         </View>
       </View>
     </Pressable>
@@ -395,6 +414,24 @@ const styles = StyleSheet.create({
   bundleTextBlock: {
     padding: Spacing.two,
     gap: Spacing.half,
+  },
+  bundlePriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
+  bundlePrice: {
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+  bundleOriginalPrice: {
+    color: '#ffffff',
+    opacity: 0.7,
+    textDecorationLine: 'line-through',
+  },
+  bundleCurrencyIcon: {
+    width: 16,
+    height: 16,
   },
   gridList: {
     gap: Spacing.two,

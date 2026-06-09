@@ -16,9 +16,9 @@
   "homepage": "https://github.com/shamahdev/primordium#readme",
   "license": "GPL-3.0-only",
   "scripts": {
-    "start": "expo start",
-    "start:dev": "cross-env APP_VARIANT=development expo start",
-    "start:preview": "cross-env APP_VARIANT=preview expo start",
+    "start": "expo start --tunnel",
+    "start:dev": "cross-env APP_VARIANT=development expo start --tunnel",
+    "start:preview": "cross-env APP_VARIANT=preview expo start --tunnel",
     "android": "expo run:android",
     "android:dev": "cross-env APP_VARIANT=development expo run:android",
     "android:preview": "cross-env APP_VARIANT=preview expo run:android",

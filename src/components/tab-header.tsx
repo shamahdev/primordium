@@ -1,11 +1,10 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
 import { getAccountLabel } from '@/lib/account';
 import { useAccountStore } from '@/stores/account-store';
 
@@ -27,7 +26,7 @@ export function TabHeader() {
           onPress={() => router.push('/switch-account')}
           style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}>
           <View style={styles.identity}>
-            <ThemedText type="smallBold" numberOfLines={1}>
+            <ThemedText type="smallBold" numberOfLines={1} style={{ color: Colors.dark.text }}>
               {getAccountLabel(account)}
             </ThemedText>
           </View>
@@ -46,7 +45,7 @@ function BalancePill({ icon, value }: { icon: number; value?: number }) {
   return (
     <View style={styles.balancePill}>
       <Image source={icon} style={styles.currencyIcon} />
-      <ThemedText type="smallBold" numberOfLines={1}>
+      <ThemedText type="smallBold" numberOfLines={1} style={{ color: Colors.dark.text }}>
         {typeof value === 'number' ? value.toLocaleString() : '--'}
       </ThemedText>
     </View>
@@ -57,7 +56,9 @@ const styles = StyleSheet.create({
   outer: {
     alignItems: 'center',
     paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.three,
+    paddingVertical: Spacing.two,
+    color: Colors.dark.text,
+    backgroundColor: Colors.dark.background,
   },
   inner: {
     width: '100%',

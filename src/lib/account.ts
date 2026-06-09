@@ -50,6 +50,7 @@ export type StoreCarouselCard = {
   section: 'featuredBundle' | 'nightMarket';
   expiresAt: string;
   items: StoreItem[];
+  price?: StorePrice;
 };
 
 export type StoreSnapshot = {

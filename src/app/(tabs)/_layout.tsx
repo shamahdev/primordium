@@ -1,8 +1,7 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
+import Feather from '@expo/vector-icons/Feather';
+import { withLayoutContext } from 'expo-router';
 import { MaterialTopTabNavigationEventMap, MaterialTopTabNavigationOptions, createMaterialTopTabNavigator } from "expo-router/js-top-tabs";
 import { ParamListBase, TabNavigationState } from "expo-router/react-navigation";
-import { withLayoutContext } from 'expo-router';
-import React from 'react';
 import { Platform, StyleSheet, useColorScheme, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -22,13 +21,13 @@ const MaterialTopTabs = withLayoutContext<
 
 export default function AuthenticatedTabsLayout() {
   const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
+  const colors = Colors[scheme === 'unspecified' ? 'dark' : scheme];
   const layout = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { showBanner, latestVersion, releaseUrl, dismissBanner } = useUpdateCheck();
 
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.screen, { backgroundColor: Colors.dark.background }]} edges={['top']}>
       <TabHeader />
       {showBanner && latestVersion && releaseUrl && (
         <UpdateBanner
@@ -64,7 +63,7 @@ export default function AuthenticatedTabsLayout() {
           options={{
             title: 'Store',
             tabBarIcon: ({ color }) => (
-              <Ionicons name="storefront-outline" size={22} color={color} />
+              <Feather name="shopping-cart" size={22} color={color} />
             ),
           }}
         />
@@ -73,16 +72,16 @@ export default function AuthenticatedTabsLayout() {
           options={{
             title: 'Catalog',
             tabBarIcon: ({ color }) => (
-              <Ionicons name="grid-outline" size={22} color={color} />
+              <Feather name="grid" size={22} color={color} />
             ),
           }}
         />
         <MaterialTopTabs.Screen
           name="profile"
           options={{
-            title: 'Accounts',
+            title: 'Account',
             tabBarIcon: ({ color }) => (
-              <Ionicons name="person-outline" size={22} color={color} />
+              <Feather name="user" size={22} color={color} />
             ),
           }}
         />

@@ -1,7 +1,7 @@
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import { DarkTheme, DefaultTheme, ThemeProvider } from "expo-router/react-navigation";
 import * as Notifications from 'expo-notifications';
 import { router, Stack } from 'expo-router';
+import { DarkTheme, DefaultTheme, ThemeProvider } from "expo-router/react-navigation";
 import React from 'react';
 import { AppState, useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -12,8 +12,8 @@ import {
   syncFavoriteStoreAlertTaskRegistration,
 } from '@/lib/favorite-store-alerts';
 import { useAccountStore } from '@/stores/account-store';
-import { useFavoriteStoreAlertStore } from '@/stores/favorite-store-alert-store';
 import { useFavoriteStore } from '@/stores/favorite-store';
+import { useFavoriteStoreAlertStore } from '@/stores/favorite-store-alert-store';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();

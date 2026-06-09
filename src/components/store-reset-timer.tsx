@@ -1,6 +1,9 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import React from 'react';
+import { View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { Spacing } from '@/constants/theme';
 
 type StoreResetTimerProps = {
   expiresAt: string;
@@ -16,9 +19,12 @@ export function StoreResetTimer({ expiresAt, prefix = 'Reset in' }: StoreResetTi
   }, []);
 
   return (
-    <ThemedText type="xsmall" themeColor="textSecondary">
-      {prefix} {formatRemaining(expiresAt, now)}
-    </ThemedText>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.half }}>
+      <Ionicons name="time-outline" size={12} color="#888888" />
+      <ThemedText type="xsmall" themeColor="textSecondary">
+        {prefix} {formatRemaining(expiresAt, now)}
+      </ThemedText>
+    </View>
   );
 }
 
