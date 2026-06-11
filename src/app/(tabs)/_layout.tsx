@@ -5,10 +5,10 @@ import { ParamListBase, TabNavigationState } from "expo-router/react-navigation"
 import { Platform, StyleSheet, useColorScheme, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { TabHeader } from '@/components/tab-header';
-import { UpdateBanner } from '@/components/update-banner';
-import { Colors, Spacing } from '@/constants/theme';
-import { useUpdateCheck } from '@/hooks/use-update-check';
+import { AccountTopHeader } from '@/modules/account/components/account-top-header';
+import { UpdateBanner } from '@/commons/components/update-banner';
+import { Colors, Spacing } from '@/commons/constants/theme';
+import { useUpdateCheck } from '@/commons/hooks/use-update-check';
 
 const { Navigator } = createMaterialTopTabNavigator();
 
@@ -28,7 +28,7 @@ export default function AuthenticatedTabsLayout() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: Colors.dark.background }]} edges={['top']}>
-      <TabHeader />
+      <AccountTopHeader />
       {showBanner && latestVersion && releaseUrl && (
         <UpdateBanner
           version={latestVersion}

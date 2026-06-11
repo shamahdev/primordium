@@ -7,16 +7,12 @@
     "icon": "./assets/images/icon.png",
     "scheme": "primordium",
     "userInterfaceStyle": "automatic",
-    "ios": {
-      "bundleIdentifier": "dev.shamah.primordium"
-    },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "monochromeImage": "./assets/images/monochrome-icon.png",
         "backgroundColor": "#E6112E"
       },
-      "package": "dev.shamah.primordium",
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -35,8 +31,6 @@
       "expo-secure-store",
       "expo-image",
       "expo-video",
-      "expo-font",
-      "expo-status-bar",
       "expo-web-browser"
     ],
     "experiments": {

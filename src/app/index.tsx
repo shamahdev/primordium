@@ -3,10 +3,10 @@ import React from 'react';
 import { ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useAccountStore } from '@/stores/account-store';
+import { ThemedText } from '@/commons/components/themed-text';
+import { ThemedView } from '@/commons/components/themed-view';
+import { MaxContentWidth, Spacing } from '@/commons/constants/theme';
+import { useAccountStore } from '@/modules/account/account-store';
 
 export default function HomeScreen() {
   const hasHydrated = useAccountStore((state) => state.hasHydrated);

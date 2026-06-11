@@ -1,5 +1,6 @@
 const IS_DEV = process.env.APP_VARIANT === 'development';
 const IS_PREVIEW = process.env.APP_VARIANT === 'preview';
+const IS_PRODUCTION = !IS_DEV && !IS_PREVIEW;
 
 function getUniqueIdentifier() {
   if (IS_DEV) {
@@ -26,7 +27,22 @@ function getAppName() {
 export default ({ config }) => ({
   ...config,
   name: getAppName(),
-  plugins: [...(config.plugins ?? []), 'expo-background-task', 'expo-notifications'],
+  plugins: [
+    ...(config.plugins ?? []),
+    [
+      'expo-build-properties',
+      {
+        android: {
+          ...(IS_PRODUCTION ? { buildArchs: ['arm64-v8a'] } : {}),
+          enableBundleCompression: true,
+          enableMinifyInReleaseBuilds: true,
+          enableShrinkResourcesInReleaseBuilds: true,
+        },
+      },
+    ],
+    'expo-background-task',
+    'expo-notifications',
+  ],
   ios: {
     ...config.ios,
     bundleIdentifier: getUniqueIdentifier(),

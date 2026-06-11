@@ -1,19 +1,16 @@
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import * as Notifications from 'expo-notifications';
 import { router, Stack } from 'expo-router';
 import { DarkTheme, DefaultTheme, ThemeProvider } from "expo-router/react-navigation";
 import React from 'react';
 import { AppState, useColorScheme } from 'react-native';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { RiotSessionRefreshWebView } from '@/components/riot-session-refresh-webview';
-import {
-  runFavoriteStoreAlertCheck,
-  syncFavoriteStoreAlertTaskRegistration,
-} from '@/lib/favorite-store-alerts';
-import { useAccountStore } from '@/stores/account-store';
-import { useFavoriteStore } from '@/stores/favorite-store';
-import { useFavoriteStoreAlertStore } from '@/stores/favorite-store-alert-store';
+import { AccountSessionRefreshWebView } from '@/modules/account/components/account-session-refresh-webview';
+import { FavoriteAlertService } from '@/modules/favorite/favorite-alert-service';
+import { useAccountStore } from '@/modules/account/account-store';
+import { useFavoriteStore } from '@/modules/favorite/favorite-store';
+import { useFavoriteAlertStore } from '@/modules/favorite/favorite-alert-store';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -21,7 +18,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <BottomSheetModalProvider>
-          <RiotSessionRefreshWebView />
+          <AccountSessionRefreshWebView />
           <FavoriteStoreAlertRuntime />
           <NotificationRouter />
           <Stack screenOptions={{ headerShown: false }}>
@@ -39,23 +36,23 @@ export default function RootLayout() {
 }
 
 function FavoriteStoreAlertRuntime() {
-  const enabled = useFavoriteStoreAlertStore((state) => state.enabled);
+  const enabled = useFavoriteAlertStore((state) => state.enabled);
   const activeAccountId = useAccountStore((state) => state.activeAccountId);
   const hasHydrated = useAccountStore((state) => state.hasHydrated);
   const favoriteCount = useFavoriteStore((state) => Object.keys(state.favoritesById).length);
 
   React.useEffect(() => {
     if (!hasHydrated) return;
-    void syncFavoriteStoreAlertTaskRegistration();
+    void FavoriteAlertService.syncTaskRegistration();
     if (enabled) {
-      void runFavoriteStoreAlertCheck();
+      void FavoriteAlertService.runCheck();
     }
   }, [activeAccountId, enabled, favoriteCount, hasHydrated]);
 
   React.useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
-        void runFavoriteStoreAlertCheck();
+        void FavoriteAlertService.runCheck();
       }
     });
 

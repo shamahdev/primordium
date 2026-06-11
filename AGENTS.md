@@ -1,4 +1,4 @@
-Read the exact versioned Expo docs at https://docs.expo.dev/versions/v55.0.0/ before writing any code.
+Read the exact versioned Expo docs at https://docs.expo.dev/versions/v56.0.0/ before writing any code.
 
 For all Riot APIs Reference, use https://valapidocs.techchrism.me/.
 
