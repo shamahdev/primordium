@@ -117,6 +117,9 @@ async function runCheck() {
         });
         alertStore.setLastNotified(accountId, resetKey);
       },
+      onChecked: (accountId) => {
+        alertStore.setLastChecked(accountId, new Date().toISOString());
+      },
     });
   } catch {
     // Favorite Store Alerts are best-effort. Background failures stay silent.
@@ -130,14 +133,17 @@ async function runAlertOrchestration(input: {
   lastNotifiedByAccountId: Record<string, string>;
   fetchStoreAlert: (account: Account) => Promise<StoreAlertOfferSnapshot>;
   onAlert: (accountId: string, resetKey: string, title: string, body: string) => Promise<void>;
+  onChecked?: (accountId: string) => void;
 }) {
   if (!input.alertEnabled) return;
   if (!input.activeAccount) return;
 
-  const { activeAccount, favoritesById, lastNotifiedByAccountId, fetchStoreAlert, onAlert } = input;
+  const { activeAccount, favoritesById, lastNotifiedByAccountId, fetchStoreAlert, onAlert, onChecked } = input;
   if (Object.keys(favoritesById).length === 0) return;
 
   const offers = await fetchStoreAlert(activeAccount);
+  onChecked?.(activeAccount.id);
+
   const decision = await getFavoriteAlertDecision({
     offers,
     favoritesById,

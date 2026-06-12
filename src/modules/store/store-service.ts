@@ -2,21 +2,16 @@ import { buildRiotAuthorizedHeaders, riotFetch } from '@/commons/lib/http';
 import { AccountService } from '@/modules/account/account-service';
 import { type Account, type AccountTokens } from '@/modules/account/account-type';
 import { CatalogService } from '@/modules/catalog/catalog-service';
-import type { CosmeticCatalogItem } from '@/modules/catalog/catalog-type';
-import { FavoriteService } from '@/modules/favorite/favorite-service';
-import { buildBundlePrice, buildStorePrice, getPrimaryStoreCostAmount } from '@/modules/store/helpers/get-store-currency';
-import { getStoreFallbackItemTitle } from '@/modules/store/helpers/get-store-fallback-item-title';
-import { getStoreItemTypeFromReward } from '@/modules/store/helpers/get-store-item-type';
+import { buildBundlePrice, getPrimaryStoreCostAmount } from '@/modules/store/helpers/get-store-currency';
+import { StoreItemResolver } from '@/modules/store/utils/store-item-resolver';
 import type {
   StoreAPIResponse,
   StoreAlertOfferSnapshot,
   StoreBundle,
   StoreCarouselCard,
-  StoreItem,
   StoreItemDetailModel,
   StoreItemDetailPrice,
   StoreItemDetailRequest,
-  StoreReward,
   StoreSnapshot,
 } from '@/modules/store/store-type';
 
@@ -68,30 +63,10 @@ export const StoreService = {
   },
 
   async getItemDetail(request: StoreItemDetailRequest): Promise<StoreItemDetailModel> {
-    const [asset, favoriteTarget] = await Promise.all([
-      CatalogService.getStoreItemAsset(request.itemAssetId),
-      FavoriteService.resolveFavoriteTarget({
-        itemAssetId: request.itemAssetId,
-        itemType: request.itemType,
-        title: request.title,
-        rarity: request.rarity,
-      }),
-    ]);
-    const heroSource = asset?.animationUrl ?? asset?.largeImageUrl ?? asset?.imageUrl;
-
+    const identity = await StoreItemResolver.resolveItemDetailIdentity(request);
     return {
-      title: request.title,
-      itemType: request.itemType,
-      isCard: request.itemType === 'card',
-      isSkin: request.itemType === 'skin',
-      isTitle: request.itemType === 'title',
-      imageUrl: asset?.imageUrl,
-      largeImageUrl: asset?.largeImageUrl,
-      wideImageUrl: asset?.wideImageUrl,
-      animationUrl: asset?.animationUrl,
-      heroSource,
+      ...identity,
       price: getStoreItemDetailPrice(request),
-      favoriteTarget: (favoriteTarget as CosmeticCatalogItem | null),
     };
   },
 };
@@ -105,12 +80,10 @@ async function fetchStorefront(account: Account, tokens: AccountTokens) {
   });
 }
 
-// --------------------------------------------------
-
 function buildDailyOffers(storefront: StoreAPIResponse) {
   return Promise.all(
     storefront.SkinsPanelLayout.SingleItemStoreOffers.map((offer) =>
-      buildStoreItem({
+      StoreItemResolver.resolveStoreItem({
         id: offer.OfferID,
         reward: offer.Rewards[0],
         cost: offer.Cost,
@@ -123,7 +96,7 @@ function buildDailyOffers(storefront: StoreAPIResponse) {
 function buildAccessoryOffers(storefront: StoreAPIResponse) {
   return Promise.all(
     storefront.AccessoryStore.AccessoryStoreOffers.map(({ Offer: offer }) =>
-      buildStoreItem({
+      StoreItemResolver.resolveStoreItem({
         id: offer.OfferID,
         reward: offer.Rewards[0],
         cost: offer.Cost,
@@ -137,7 +110,7 @@ async function buildFeaturedBundleCard(bundle: StoreBundle): Promise<StoreCarous
     CatalogService.getBundleAsset(bundle.DataAssetID || bundle.ID, { refreshOnMiss: true }),
     Promise.all(
       bundle.Items.map((item, index) =>
-        buildStoreItem({
+        StoreItemResolver.resolveStoreItem({
           id: `${bundle.ID}.${index}`,
           reward: { ItemID: item.Item.ItemID, ItemTypeID: item.Item.ItemTypeID, Quantity: item.Item.Amount },
           cost: { [item.CurrencyID]: item.BasePrice },
@@ -163,7 +136,7 @@ async function buildFeaturedBundleCard(bundle: StoreBundle): Promise<StoreCarous
 async function buildNightMarketCard(bonusStore: NonNullable<StoreAPIResponse['BonusStore']>) {
   const items = await Promise.all(
     bonusStore.BonusStoreOffers.map((offer) =>
-      buildStoreItem({
+      StoreItemResolver.resolveStoreItem({
         id: offer.BonusOfferID,
         reward: offer.Offer.Rewards[0],
         cost: offer.DiscountCosts,
@@ -183,40 +156,6 @@ async function buildNightMarketCard(bonusStore: NonNullable<StoreAPIResponse['Bo
     items,
   };
 }
-
-async function buildStoreItem(params: {
-  id: string;
-  reward?: StoreReward;
-  cost: Record<string, number>;
-  originalAmount?: number;
-  discountPercent?: number;
-  itemType?: StoreItem['itemType'];
-}): Promise<StoreItem> {
-  const resolvedItemType = params.itemType ?? getStoreItemTypeFromReward(params.reward);
-  const asset = params.reward ? await CatalogService.getStoreItemAsset(params.reward.ItemID, { refreshOnMiss: true }) : undefined;
-  const title = asset?.title ?? getStoreFallbackItemTitle(resolvedItemType);
-  const favoriteTargetId = params.reward
-    ? await FavoriteService.getFavoriteTargetId({
-        itemAssetId: params.reward.ItemID,
-        itemType: resolvedItemType,
-        title,
-        imageUrl: typeof asset?.imageUrl === 'string' ? asset.imageUrl : undefined,
-        rarity: asset?.rarity,
-      })
-    : undefined;
-
-  return {
-    id: params.id,
-    title,
-    imageUrl: asset?.imageUrl,
-    itemType: resolvedItemType,
-    rarity: asset?.rarity,
-    price: buildStorePrice(params.cost, params.originalAmount, params.discountPercent),
-    itemAssetId: params.reward?.ItemID,
-    favoriteTargetId,
-  };
-}
-
 
 function getExpiresAt(durationSeconds: number) {
   return new Date(Date.now() + durationSeconds * 1000).toISOString();

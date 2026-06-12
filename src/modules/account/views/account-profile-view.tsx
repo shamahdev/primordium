@@ -20,6 +20,8 @@ export function AccountProfileView() {
     ignoringBatteryOptimizations,
     updatingAlerts,
     favoriteStoreAlertsEnabled,
+    favoriteStoreAlertsLastCheckedAt,
+    favoritesCount,
     latestVersion,
     currentVersion,
     confirmLogout,
@@ -84,6 +86,8 @@ export function AccountProfileView() {
             enabled={favoriteStoreAlertsEnabled}
             disabled={updatingAlerts}
             onValueChange={toggleFavoriteStoreAlerts}
+            favoritesCount={favoritesCount}
+            lastCheckedAt={favoriteStoreAlertsLastCheckedAt}
           />
           {favoriteStoreAlertsEnabled && Platform.OS === 'android' && !ignoringBatteryOptimizations ? (
             <BatteryOptimizationCard onPress={() => { void requestIgnoreBatteryOptimizations(); }} />
@@ -149,18 +153,39 @@ function AlertToggleRow({
   enabled,
   disabled,
   onValueChange,
+  favoritesCount,
+  lastCheckedAt,
 }: {
   enabled: boolean;
   disabled: boolean;
   onValueChange: (enabled: boolean) => void;
+  favoritesCount: number;
+  lastCheckedAt: string | null;
 }) {
   const theme = useTheme();
+  const metadata = React.useMemo(() => {
+    const favoriteLabel = `${favoritesCount} Favorite${favoritesCount === 1 ? '' : 's'}`;
+    if (!enabled) {
+      return `${favoriteLabel} • Enable alerts to check in background`;
+    }
+    if (favoritesCount === 0) {
+      return `${favoriteLabel} • Add favorites to enable useful alerts`;
+    }
+    if (!lastCheckedAt) {
+      return `${favoriteLabel} • Not checked yet`;
+    }
+    return `${favoriteLabel} • Last checked ${formatRelativeTime(lastCheckedAt)}`;
+  }, [enabled, favoritesCount, lastCheckedAt]);
+
   return (
     <ThemedView type="backgroundElement" style={styles.alertRow}>
       <ThemedView type="backgroundElement" style={styles.alertCopy}>
         <ThemedText type="small">Favorite store alerts</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
           Notify when a favorite appears in your daily or accessory store.
+        </ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          {metadata}
         </ThemedText>
       </ThemedView>
       <Switch
@@ -172,6 +197,21 @@ function AlertToggleRow({
       />
     </ThemedView>
   );
+}
+
+function formatRelativeTime(isoDate: string): string {
+  const now = Date.now();
+  const then = new Date(isoDate).getTime();
+  const diff = now - then;
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 60) return 'Just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} d ago`;
+  return new Date(then).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 function BatteryOptimizationCard({ onPress }: { onPress: () => void }) {

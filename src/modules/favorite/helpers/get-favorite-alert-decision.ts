@@ -1,5 +1,5 @@
 import type { StoreAlertOfferSnapshot } from '@/modules/store/store-type';
-import { FavoriteService } from '@/modules/favorite/favorite-service';
+import { StoreItemResolver } from '@/modules/store/utils/store-item-resolver';
 import type { FavoriteSnapshot } from '@/modules/favorite/favorite-type';
 
 type FavoriteAlertDecisionInput = {
@@ -24,7 +24,7 @@ export async function getFavoriteAlertDecision({
     return null;
   }
 
-  const matches = await FavoriteService.getFavoriteOfferMatches(
+  const matches = await StoreItemResolver.resolveFavoriteOfferMatches(
     [...offers.dailyOffers, ...offers.accessoryOffers],
     favoritesById,
   );

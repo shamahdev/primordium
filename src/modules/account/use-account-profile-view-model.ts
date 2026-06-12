@@ -12,6 +12,7 @@ import { getLoginHref, getOnboardingHref, getSwitchAccountHref } from '@/modules
 import { AccountService } from '@/modules/account/account-service';
 import { useAccountStore } from '@/modules/account/account-store';
 import { useFavoriteAlertStore } from '@/modules/favorite/favorite-alert-store';
+import { useFavoriteStore } from '@/modules/favorite/favorite-store';
 import { useUpdateCheck } from '@/commons/hooks/use-update-check';
 
 export function useAccountProfileViewModel() {
@@ -25,6 +26,10 @@ export function useAccountProfileViewModel() {
   const { latestVersion, releaseUrl } = useUpdateCheck();
   const favoriteStoreAlertsEnabled = useFavoriteAlertStore((state) => state.enabled);
   const setFavoriteStoreAlertsEnabled = useFavoriteAlertStore((state) => state.setEnabled);
+  const favoritesCount = useFavoriteStore((state) => Object.keys(state.favoritesById).length);
+  const favoriteStoreAlertsLastCheckedAt = useFavoriteAlertStore(
+    (state) => state.lastCheckedByAccountId[activeAccountId ?? ''] ?? null,
+  );
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [ignoringBatteryOptimizations, setIgnoringBatteryOptimizations] = React.useState(true);
@@ -164,6 +169,8 @@ export function useAccountProfileViewModel() {
       ignoringBatteryOptimizations: false,
       updatingAlerts: false,
       favoriteStoreAlertsEnabled: false,
+      favoriteStoreAlertsLastCheckedAt: null,
+      favoritesCount: 0,
       latestVersion: null,
       currentVersion: '0.0.0',
       confirmLogout: () => {},
@@ -184,6 +191,8 @@ export function useAccountProfileViewModel() {
     ignoringBatteryOptimizations,
     updatingAlerts,
     favoriteStoreAlertsEnabled,
+    favoriteStoreAlertsLastCheckedAt,
+    favoritesCount,
     latestVersion,
     currentVersion: Constants.expoConfig?.version ?? '0.0.0',
     confirmLogout,
