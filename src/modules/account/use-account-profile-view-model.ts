@@ -6,7 +6,7 @@ import { Alert, AppState } from 'react-native';
 
 import { getAccountLabel } from '@/modules/account/account-type';
 import { getBatteryOptimizationStatus } from '@/modules/favorite/adapters/favorite-battery-optimization.adapter';
-import { FavoriteAlertService } from '@/modules/favorite/favorite-alert-service';
+import { FavoriteAlertController } from '@/modules/favorite/favorite-alert-controller';
 import { log } from '@/commons/lib/logger';
 import { getLoginHref, getOnboardingHref, getSwitchAccountHref } from '@/modules/account/helpers/get-account-navigation-href';
 import { AccountService } from '@/modules/account/account-service';
@@ -25,7 +25,6 @@ export function useAccountProfileViewModel() {
   const removeAccount = useAccountStore((state) => state.removeAccount);
   const { latestVersion, releaseUrl } = useUpdateCheck();
   const favoriteStoreAlertsEnabled = useFavoriteAlertStore((state) => state.enabled);
-  const setFavoriteStoreAlertsEnabled = useFavoriteAlertStore((state) => state.setEnabled);
   const favoritesCount = useFavoriteStore((state) => Object.keys(state.favoritesById).length);
   const favoriteStoreAlertsLastCheckedAt = useFavoriteAlertStore(
     (state) => state.lastCheckedByAccountId[activeAccountId ?? ''] ?? null,
@@ -132,19 +131,10 @@ export function useAccountProfileViewModel() {
   const toggleFavoriteStoreAlerts = async (enabled: boolean) => {
     setUpdatingAlerts(true);
     try {
-      if (enabled) {
-        const allowed = await FavoriteAlertService.requestPermission();
-        if (!allowed) {
-          Alert.alert('Notifications unavailable', 'Allow notifications to enable Favorite store alerts.');
-          return;
-        }
-        setFavoriteStoreAlertsEnabled(true);
-        await FavoriteAlertService.registerTask();
-        return;
+      const result = await FavoriteAlertController.setEnabled(enabled);
+      if (!result.ok) {
+        Alert.alert('Notifications unavailable', 'Allow notifications to enable Favorite store alerts.');
       }
-
-      setFavoriteStoreAlertsEnabled(false);
-      await FavoriteAlertService.unregisterTask();
     } catch (alertError) {
       Alert.alert(
         'Could not update alerts',
