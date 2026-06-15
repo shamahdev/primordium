@@ -5,59 +5,83 @@
 
 # Primordium
 
-**Check your Valorant daily store without opening the game — across multiple accounts**
+[Download latest release](https://github.com/shamahdev/primordium/releases)
 
-[![Expo](https://img.shields.io/badge/Expo-55-000020?style=flat-square&logo=expo)](https://expo.dev)
-[![React Native](https://img.shields.io/badge/React_Native-0.83-61dafb?style=flat-square&logo=react)](https://reactnative.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![iOS](https://img.shields.io/badge/iOS-supported-success?style=flat-square&logo=apple)](https://www.apple.com/ios/)
-[![Android](https://img.shields.io/badge/Android-supported-success?style=flat-square&logo=android)](https://www.android.com/)
+**Check your Valorant Store from your phone, across multiple Riot accounts**
 
-[Download](#download) • [Features](#features) • [Tech Stack](#tech-stack) • [How to Contribute](#how-to-contribute) • [Discussion](#discussion)
+
+[![Expo](https://img.shields.io/badge/Expo-56-000020?style=flat-square&logo=expo)](https://expo.dev)
+[![React Native](https://img.shields.io/badge/React_Native-0.85-61dafb?style=flat-square&logo=react)](https://reactnative.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Android APK](https://img.shields.io/badge/Android-APK-success?style=flat-square&logo=android)](https://github.com/shamahdev/primordium/releases)
+
+[Download](#download) • [Features](#features) • [Architecture](#architecture) • [Contributing](#contributing)
 
 </div>
 
 ## Overview
 
-Primordium is an unofficial mobile companion app for Valorant that lets you check your personalized daily store, featured bundles, and Night Market without launching the game. Switch between multiple Riot accounts on a single device and keep tabs on every store rotation at a glance.
+Primordium is an unofficial mobile companion app for Valorant. It lets you view your personalized Store, featured bundles, Night Market, cosmetic catalog, and account profile without opening the game.
 
-Heavily inspired by [VShop](https://vshop.one/), Primordium aims to deliver a fast, native, and secure experience for players who want quick access to their Valorant store from anywhere.
+The app signs in through Riot, stores session material on-device, refreshes sessions automatically when possible, and supports switching between multiple Riot accounts on one device.
+
+Primordium is heavily inspired by [VShop](https://vshop.one/).
 
 ## Download
 
-Get the latest version from the [releases page](https://github.com/shamahdev/primordium/releases).
+Android APK builds are published on the [GitHub Releases page](https://github.com/shamahdev/primordium/releases). Production Android distribution uses APK releases rather than Play Store AAB distribution.
 
 ## Features
 
-- **Daily Store, Bundles & Night Market** - View daily offerings, featured bundles and night market with countdown timers
-- **Profile Stats** - Track level, XP, and currency balances
-- **Auto Session Refresh** - Stay logged in without manual re-authentication
-- **Multi-Account Support** - Switch between multiple Riot accounts on one device
+- **Store** - View daily skin offers, accessory offers, featured bundles, and Night Market cards with reset timers.
+- **Catalog** - Browse Valorant cosmetics from `valorant-api.com`, search, filter by item type, and open item details.
+- **Favorites & Store Alerts** - Mark cosmetics as favorites and optionally get notified when a favorited item appears in your Store.
+- **Account Profile & Multi-Account Support** - View level, XP, currency balances, and manage multiple Riot accounts on one device.
+- **Session Recovery** - Stored Riot sessions are refreshed in the background when possible, with reauth prompts when Riot requires a fresh login.
+- **Update Checks** - In-app release banner points users to newer GitHub Releases builds.
+
+## Architecture
+
+Primordium uses Expo Router with vertical domain modules under `src/modules`.
+
+```text
+src/
+├── app/                # Expo Router routes and layouts
+├── commons/            # Shared UI, theme, HTTP, logging, update checks
+└── modules/
+    ├── account/        # Riot login, stored sessions, profile, account switching
+    ├── catalog/        # Public cosmetic catalog and filtering
+    ├── favorite/       # Favorites and background notification alerts
+    └── store/          # Riot storefront, offers, bundles, item details
+```
+
+Key implementation details:
+
+- **Expo SDK 56** with React Native 0.85, React 19, Expo Router, and typed routes.
+- **Zustand** persists account, favorite, and alert state.
+- **Riot storefront** requests use `POST https://pd.{shard}.a.pvp.net/store/v3/storefront/{puuid}` with Riot auth headers.
+- **Public assets** are resolved from [valorant-api.com](https://valorant-api.com/) for bundles, skins, buddies, cards, sprays, flex items, and titles.
+- **Secure material** is stored through Expo SecureStore; persistent app state uses AsyncStorage-backed Zustand stores.
+- **Background alerts** use Expo Background Task, Task Manager, and Notifications.
+- **Production Android builds** are APKs with arm64-v8a only, R8 minification, resource shrinking, and bundle compression enabled.
 
 ## Tech Stack
 
-- **[Expo](https://expo.dev)** & **[React Native](https://reactnative.dev)**
-- **[Expo Router](https://docs.expo.dev/router/introduction/)**
-- **[Zustand](https://github.com/pmndrs/zustand)**
+- [Expo](https://expo.dev/) and [React Native](https://reactnative.dev/)
+- [Expo Router](https://docs.expo.dev/router/introduction/)
+- [Zustand](https://github.com/pmndrs/zustand)
 
-## How to Contribute
+## Contributing
 
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to this project.
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 
-## Discussion
-
-Have questions, feature requests, or ideas? Join the conversation in [GitHub Discussions](https://github.com/shamahdev/primordium/discussions).
-
-## Learn More
-
-- [Expo Documentation](https://docs.expo.dev/)
-- [React Native Documentation](https://reactnative.dev/docs/getting-started)
-- [Valorant API Documentation](https://valapidocs.techchrism.me/)
+Use [GitHub Issues](https://github.com/shamahdev/primordium/issues) for bugs and feature requests, and [GitHub Discussions](https://github.com/shamahdev/primordium/discussions) for broader ideas or questions.
 
 ## Acknowledgments
 
-- [VShop](https://vshop.one/), the primary inspiration for this project
-- [valorant-api.com](https://valorant-api.com/) for public asset and metadata APIs
+- [VShop](https://vshop.one/) for the original product inspiration.
+- [valapidocs.techchrism.me](https://valapidocs.techchrism.me/) for Riot API reference material.
+- [valorant-api.com](https://valorant-api.com/) for public asset and metadata APIs.
 
 ---
 
