@@ -95,6 +95,11 @@ jobs:
 
       - name: ⚙️ Build Android
         run: |
+          mkdir -p ~/.gradle
+          cat >> ~/.gradle/gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8
+          EOF
+
           export NODE_OPTIONS="--openssl-legacy-provider --max_old_space_size=4096"
           eas build \
             --platform android \
