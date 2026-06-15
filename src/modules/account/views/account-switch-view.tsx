@@ -123,6 +123,7 @@ const styles = StyleSheet.create({
   accountText: {
     flex: 1,
     gap: Spacing.one,
+    backgroundColor: 'transparent',
   },
   cancel: {
     alignItems: 'center',

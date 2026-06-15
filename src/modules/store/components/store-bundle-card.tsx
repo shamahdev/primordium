@@ -3,7 +3,7 @@ import { Colors, Spacing } from '@/commons/constants/theme';
 import { getCatalogStoreCurrencyIcon } from '@/modules/catalog/catalog-presentation';
 import { type StoreCarouselCard } from '@/modules/store/store-type';
 import { Image } from 'expo-image';
-import { Pressable, View, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 type StoreBundleCardProps = {
   card: StoreCarouselCard;
@@ -11,7 +11,7 @@ type StoreBundleCardProps = {
 };
 
 export function getStoreBundleCardWidth(windowWidth: number) {
-  return Math.floor(windowWidth * 0.9);
+  return Math.floor(windowWidth * 0.8);
 }
 
 export function StoreBundleCard({ card, onPress }: StoreBundleCardProps) {
@@ -21,7 +21,7 @@ export function StoreBundleCard({ card, onPress }: StoreBundleCardProps) {
       style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
       <View style={styles.bundleCard}>
         {card.imageUrl ? (
-          <Image source={card.imageUrl} contentFit="cover" style={styles.bundleImage} />
+          <Image source={card.imageUrl} contentFit="cover" contentPosition="center" style={styles.bundleImage} />
         ) : (
           <View style={styles.bundleImageFallback}>
             <ThemedText type="smallBold" themeColor="textSecondary">
@@ -58,7 +58,7 @@ export function StoreBundleCard({ card, onPress }: StoreBundleCardProps) {
 
 const styles = StyleSheet.create({
   bundleCard: {
-    height: 144,
+    height: 120,
     borderRadius: Spacing.one,
     overflow: 'hidden',
     backgroundColor: Colors.dark.backgroundElement,

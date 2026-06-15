@@ -23,7 +23,7 @@ export function AccountOnboardingView() {
         contentContainerStyle={[styles.content, { paddingTop: insets.top }]}
         showsVerticalScrollIndicator={false}>
         <ThemedView style={styles.hero}>
-          <Image source={require('@/assets/images/splash-icon.png')} style={styles.icon} />
+          <Image source={require('@/assets/images/icon.png')} style={styles.icon} />
           <ThemedText type="title" style={styles.title}>
             Primordium
           </ThemedText>
@@ -108,8 +108,8 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   icon: {
-    width: 24,
-    height: 24,
+    width: 32,
+    height: 32,
     borderRadius: Spacing.one,
   },
   title: {

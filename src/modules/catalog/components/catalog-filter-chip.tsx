@@ -30,7 +30,7 @@ export const CatalogFilterChip = React.memo(function CatalogFilterChip({
         },
       ]}>
       <ThemedText type="xsmall" style={{ color: selected ? theme.primaryForeground : theme.text }}>
-        {label}
+        {label.at(0)?.toUpperCase() + label.slice(1)}
       </ThemedText>
     </Pressable>
   );
@@ -38,7 +38,7 @@ export const CatalogFilterChip = React.memo(function CatalogFilterChip({
 
 const styles = StyleSheet.create({
   chip: {
-    borderWidth: StyleSheet.hairlineWidth,
+    textTransform: 'capitalize',
     borderRadius: 999,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,

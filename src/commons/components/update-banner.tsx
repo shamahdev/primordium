@@ -1,6 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { openBrowserAsync, WebBrowserPresentationStyle } from 'expo-web-browser';
-import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/commons/components/themed-text';
@@ -26,7 +25,7 @@ export function UpdateBanner({ version, releaseUrl, onDismiss }: UpdateBannerPro
     <View style={[styles.banner, { backgroundColor: theme.accent }]}>
       <Pressable onPress={handlePress} style={styles.content}>
         <ThemedText
-          type="small"
+          type="xsmall"
           numberOfLines={2}
           style={[styles.text, { color: theme.accentForeground }]}
         >

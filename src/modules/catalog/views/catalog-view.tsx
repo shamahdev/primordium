@@ -118,7 +118,7 @@ export function CatalogView({
               ))}
             </View>
             {!loading && !error ? (
-              <ThemedText type="small" themeColor="textSecondary">
+              <ThemedText type="xsmall" themeColor="textSecondary">
                 {resultCount.toLocaleString()} {mode === 'favorites' ? 'favorites' : 'items'}
               </ThemedText>
             ) : null}

@@ -5,8 +5,8 @@ import { ThemedText } from '@/commons/components/themed-text';
 import { ThemedView } from '@/commons/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/commons/constants/theme';
 import { useTheme } from '@/commons/hooks/use-theme';
-import { getLoginHref } from '@/modules/account/helpers/get-account-navigation-href';
 import { type Account } from '@/modules/account/account-type';
+import { getLoginHref } from '@/modules/account/helpers/get-account-navigation-href';
 import { StoreBundleCard, getStoreBundleCardWidth } from '@/modules/store/components/store-bundle-card';
 import { StoreGrid } from '@/modules/store/components/store-grid';
 import { StoreSectionSheet } from '@/modules/store/components/store-section-sheet';
@@ -137,7 +137,7 @@ export function StoreView({
                   decelerationRate="fast"
                   renderItem={renderBundleCardItem}
                   showsHorizontalScrollIndicator={false}
-                  ItemSeparatorComponent={() => <View style={{ width: Spacing.two }} />}
+                  ItemSeparatorComponent={() => <View style={{ width: Spacing.one }} />}
                 />
               ) : (
                 <StoreBundleCard card={carouselCards[0]} onPress={handleBundleCardPress} />

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/commons/components/themed-text';
@@ -15,7 +14,7 @@ export function ErrorBanner({ message, actionLabel, onPress }: ErrorBannerProps)
   const theme = useTheme();
   const content = (
     <>
-      <ThemedText type="small" numberOfLines={2} style={[styles.text, { color: theme.primaryForeground }]}>
+      <ThemedText type="xsmall" numberOfLines={2} style={[styles.text, { color: theme.primaryForeground }]}>
         {message}
       </ThemedText>
       {actionLabel ? (

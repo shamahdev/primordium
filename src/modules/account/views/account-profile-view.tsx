@@ -3,12 +3,12 @@ import React from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Switch } from 'react-native';
 
 import { ErrorBanner } from '@/commons/components/error-banner';
-import { requestIgnoreBatteryOptimizations } from '@/modules/favorite/adapters/favorite-battery-optimization.adapter';
 import { ThemedText } from '@/commons/components/themed-text';
 import { ThemedView } from '@/commons/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/commons/constants/theme';
 import { useTheme } from '@/commons/hooks/use-theme';
 import { useAccountProfileViewModel } from '@/modules/account/use-account-profile-view-model';
+import { requestIgnoreBatteryOptimizations } from '@/modules/favorite/adapters/favorite-battery-optimization.adapter';
 
 export function AccountProfileView() {
   const {
@@ -181,10 +181,7 @@ function AlertToggleRow({
     <ThemedView type="backgroundElement" style={styles.alertRow}>
       <ThemedView type="backgroundElement" style={styles.alertCopy}>
         <ThemedText type="small">Favorite store alerts</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          Notify when a favorite appears in your daily or accessory store.
-        </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
+        <ThemedText type="xsmall" themeColor="textSecondary">
           {metadata}
         </ThemedText>
       </ThemedView>
@@ -221,7 +218,7 @@ function BatteryOptimizationCard({ onPress }: { onPress: () => void }) {
       type="backgroundSelected"
       style={[styles.batteryCard, { borderColor: theme.backgroundSelected }]}
     >
-      <ThemedText type="small" themeColor="textSecondary">
+      <ThemedText type="xsmall" themeColor="textSecondary">
         Background checks may be delayed if Android restricts Primordium in the background.
         Allow unrestricted battery usage for more reliable alerts.
       </ThemedText>
