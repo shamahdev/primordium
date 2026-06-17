@@ -5,7 +5,7 @@ import { useFavoriteStore } from '@/modules/favorite/favorite-store';
 import { CatalogService } from './catalog-service';
 import type { CatalogFilter, CatalogListItem, CatalogMode } from './catalog-type';
 import { getCatalogSections } from './helpers/get-catalog-sections';
-import { sortCatalogItems, sortFavoriteItems } from './helpers/sort-catalog-items';
+import { sortFavoriteItems } from './helpers/sort-catalog-items';
 import { toCatalogListItem } from './helpers/to-catalog-list-item';
 
 let catalogMemoryMode: CatalogMode = 'all';
@@ -37,8 +37,7 @@ export function useCatalogViewModel() {
     let nextItems: CatalogListItem[] | null = null;
 
     try {
-      const catalogItems = await CatalogService.getCatalogItems({ refresh });
-      nextItems = sortCatalogItems(catalogItems.map(toCatalogListItem));
+      nextItems = await CatalogService.getPreparedCatalogItems({ refresh });
     } catch (loadError) {
       nextError = loadError instanceof Error ? loadError.message : 'Could not load cosmetic catalog.';
     }
@@ -62,8 +61,7 @@ export function useCatalogViewModel() {
       let nextItems: CatalogListItem[] | null = null;
 
       try {
-        const catalogItems = await CatalogService.getCatalogItems({ refresh: false });
-        nextItems = sortCatalogItems(catalogItems.map(toCatalogListItem));
+        nextItems = await CatalogService.getPreparedCatalogItems({ refresh: false });
       } catch (loadError) {
         nextError = loadError instanceof Error ? loadError.message : 'Could not load cosmetic catalog.';
       }

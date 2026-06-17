@@ -2,13 +2,15 @@ import Feather from '@expo/vector-icons/Feather';
 import { withLayoutContext } from 'expo-router';
 import { MaterialTopTabNavigationEventMap, MaterialTopTabNavigationOptions, createMaterialTopTabNavigator } from "expo-router/js-top-tabs";
 import { ParamListBase, TabNavigationState } from "expo-router/react-navigation";
-import { Platform, StyleSheet, useColorScheme, useWindowDimensions } from 'react-native';
+import React from 'react';
+import { InteractionManager, Platform, StyleSheet, useColorScheme, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AccountTopHeader } from '@/modules/account/components/account-top-header';
 import { UpdateBanner } from '@/commons/components/update-banner';
 import { Colors, Spacing } from '@/commons/constants/theme';
 import { useUpdateCheck } from '@/commons/hooks/use-update-check';
+import { CatalogService } from '@/modules/catalog/catalog-service';
 
 const { Navigator } = createMaterialTopTabNavigator();
 
@@ -25,6 +27,21 @@ export default function AuthenticatedTabsLayout() {
   const layout = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { showBanner, latestVersion, releaseUrl, dismissBanner } = useUpdateCheck();
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const task = InteractionManager.runAfterInteractions(() => {
+      if (!cancelled) {
+        CatalogService.prewarmCatalogItems();
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      task.cancel();
+    };
+  }, []);
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: Colors.dark.background }]} edges={['top']}>

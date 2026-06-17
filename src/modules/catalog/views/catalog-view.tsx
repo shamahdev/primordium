@@ -1,9 +1,9 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { LegendList } from '@legendapp/list/react-native';
 import React from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  SectionList,
   StyleSheet,
   TextInput,
   View,
@@ -20,7 +20,7 @@ import { CatalogModeButton } from '../components/catalog-mode-button';
 import { CatalogRow } from '../components/catalog-row';
 import { CatalogSectionHeader } from '../components/catalog-section-header';
 
-import type { CatalogFilter, CatalogListItem, CatalogMode } from '../catalog-type';
+import type { CatalogFilter, CatalogListItem, CatalogMode, CatalogRenderItem } from '../catalog-type';
 
 type CatalogViewProps = {
   error: string | null;
@@ -55,25 +55,46 @@ export function CatalogView({
 }: CatalogViewProps) {
   const theme = useTheme();
 
+  const flatData = React.useMemo<CatalogRenderItem[]>(() => {
+    const rows: CatalogRenderItem[] = [];
+    for (const section of sections) {
+      if (section.data.length === 0) continue;
+      rows.push({ kind: 'header', key: `section-${section.key}`, title: section.title });
+      for (const item of section.data) {
+        rows.push({ kind: 'item', key: item.id, item });
+      }
+    }
+    return rows;
+  }, [sections]);
+
   const renderItem = React.useCallback(
-    ({ item }: { item: CatalogListItem }) => (
-      <CatalogRow item={item} isFavorite={!!favoritesById[item.id]} />
-    ),
+    ({ item }: { item: CatalogRenderItem }) => {
+      if (item.kind === 'header') {
+        return <CatalogSectionHeader title={item.title} />;
+      }
+
+      return <CatalogRow item={item.item} isFavorite={!!favoritesById[item.item.id]} />;
+    },
     [favoritesById],
   );
-  const renderSectionHeader = React.useCallback(
-    ({ section }: { section: { title: string } }) => <CatalogSectionHeader title={section.title} />,
+
+  const getItemType = React.useCallback(
+    (item: CatalogRenderItem) => item.kind,
     [],
   );
+
+  const keyExtractor = React.useCallback((item: CatalogRenderItem) => item.key, []);
 
   return (
     <ThemedView style={styles.screen}>
       {error ? <ErrorBanner message={error} actionLabel="Retry" onPress={retryCatalog} /> : null}
-      <SectionList
-        sections={sections}
-        keyExtractor={(item) => item.id}
+      <LegendList
+        data={flatData}
+        keyExtractor={keyExtractor}
         renderItem={renderItem}
-        renderSectionHeader={renderSectionHeader}
+        getItemType={getItemType}
+        recycleItems
+        estimatedItemSize={72}
         ListHeaderComponent={
           <View style={styles.headerContent}>
             <View style={[styles.modeSwitch, { backgroundColor: theme.backgroundElement }]}>
@@ -148,12 +169,6 @@ export function CatalogView({
           </View>
         }
         contentContainerStyle={styles.content}
-        stickySectionHeadersEnabled={false}
-        initialNumToRender={12}
-        maxToRenderPerBatch={12}
-        updateCellsBatchingPeriod={32}
-        windowSize={7}
-        removeClippedSubviews={true}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       />

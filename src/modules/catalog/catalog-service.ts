@@ -1,6 +1,7 @@
 import type {
   BundleAsset,
   BuddyAsset,
+  CatalogListItem,
   CosmeticCatalogItem,
   ItemAssetCatalog,
   PlayerCardAsset,
@@ -11,6 +12,8 @@ import type {
   StoreAsset,
   ValorantApiResponse,
 } from './catalog-type';
+import { sortCatalogItems } from './helpers/sort-catalog-items';
+import { toCatalogListItem } from './helpers/to-catalog-list-item';
 
 const VALORANT_PUBLIC_API_ROOT = 'https://valorant-api.com/v1';
 
@@ -18,6 +21,8 @@ let bundleAssetsPromise: Promise<Map<string, StoreAsset>> | null = null;
 let bundleAssetsRefreshPromise: Promise<Map<string, StoreAsset>> | null = null;
 let itemAssetsPromise: Promise<ItemAssetCatalog> | null = null;
 let itemAssetsRefreshPromise: Promise<ItemAssetCatalog> | null = null;
+let preparedCatalogItemsPromise: Promise<CatalogListItem[]> | null = null;
+let preparedCatalogItemsRefreshPromise: Promise<CatalogListItem[]> | null = null;
 
 const CONTENT_TIER_TO_RARITY: Record<string, StoreAsset['rarity']> = {
   '12683d76-48d7-84a3-4e09-6985794f0445': 'select',
@@ -200,6 +205,15 @@ async function loadItemAssets() {
   return { items, skinDetails, catalog, canonicalItems };
 }
 
+async function prepareCatalogItems() {
+  const { catalog } = await getItemAssets();
+  if (catalog.length === 0) {
+    throw new Error('Could not load cosmetic catalog.');
+  }
+
+  return sortCatalogItems(catalog.map(toCatalogListItem));
+}
+
 async function fetchCatalog<T>(path: string) {
   try {
     const response = await fetch(`${VALORANT_PUBLIC_API_ROOT}/${path}`);
@@ -251,6 +265,29 @@ export const CatalogService = {
     }
 
     return catalog;
+  },
+
+  async getPreparedCatalogItems({ refresh = false } = {}) {
+    if (refresh) {
+      if (!preparedCatalogItemsRefreshPromise) {
+        preparedCatalogItemsPromise = prepareCatalogItems();
+        preparedCatalogItemsRefreshPromise = preparedCatalogItemsPromise.finally(() => {
+          preparedCatalogItemsRefreshPromise = null;
+        });
+      }
+
+      return preparedCatalogItemsRefreshPromise;
+    }
+
+    if (!preparedCatalogItemsPromise) {
+      preparedCatalogItemsPromise = prepareCatalogItems();
+    }
+
+    return preparedCatalogItemsPromise;
+  },
+
+  prewarmCatalogItems() {
+    void this.getPreparedCatalogItems();
   },
 
   async getCanonicalItem(itemId: string) {

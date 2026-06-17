@@ -7,10 +7,9 @@ export type CatalogSection = {
   data: CatalogListItem[];
 };
 
-export type CatalogListItem = CosmeticCatalogItem & {
-  searchText: string;
-  favoritedAt?: string;
-};
+export type CatalogRenderItem =
+  | { kind: 'header'; key: string; title: string }
+  | { kind: 'item'; key: string; item: CatalogListItem };
 
 export type StoreAsset = {
   title: string;
@@ -24,6 +23,11 @@ export type StoreAsset = {
 export type CosmeticCatalogItem = StoreAsset & {
   id: string;
   itemType: 'skin' | 'buddy' | 'spray' | 'card' | 'title' | 'flex';
+};
+
+export type CatalogListItem = CosmeticCatalogItem & {
+  searchText: string;
+  favoritedAt?: string;
 };
 
 export type SkinDetailChroma = {
