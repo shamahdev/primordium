@@ -3,6 +3,7 @@ import { AccountService } from '@/modules/account/account-service';
 import { StoreService } from '@/modules/store/store-service';
 import { type StoreCarouselCard } from '@/modules/store/store-type';
 import { useAccountStore } from '@/modules/account/account-store';
+import { useFavoriteStore } from '@/modules/favorite/favorite-store';
 import { type BottomSheetModal } from '@gorhom/bottom-sheet';
 import { router, useFocusEffect } from 'expo-router';
 import React from 'react';
@@ -14,6 +15,7 @@ export function useStoreViewModel() {
   const accountCount = useAccountStore((state) => state.accounts.length);
   const setStoreSnapshot = useAccountStore((state) => state.setStoreSnapshot);
   const setProfileSnapshot = useAccountStore((state) => state.setProfileSnapshot);
+  const favoritesById = useFavoriteStore((state) => state.favoritesById);
 
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -91,6 +93,12 @@ export function useStoreViewModel() {
     return left.section === 'nightMarket' ? -1 : 1;
   });
   const hasBundleCarousel = carouselCards.length > 1;
+  const favoriteMatchesById = Object.fromEntries(
+    [...(snapshot?.dailyOffers ?? []), ...(snapshot?.accessoryOffers ?? [])]
+      .map((item) => item.favoriteTargetId ?? item.itemAssetId)
+      .filter((itemId): itemId is string => !!itemId)
+      .map((itemId) => [itemId, !!favoritesById[itemId]]),
+  );
 
   const handleBundleCardPress = (card: StoreCarouselCard) => {
     setSelectedSection(card);
@@ -121,5 +129,6 @@ export function useStoreViewModel() {
     handleSheetBeforeNavigate,
     carouselCards,
     hasBundleCarousel,
+    favoriteMatchesById,
   };
 }

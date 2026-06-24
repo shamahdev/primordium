@@ -26,9 +26,12 @@ function getAppName() {
 
 export default ({ config }) => ({
   ...config,
+  newArchEnabled: true,
+  jsEngine: 'hermes',
   name: getAppName(),
   plugins: [
     ...(config.plugins ?? []),
+    '@react-native-runtimes/core',
     [
       'expo-build-properties',
       {

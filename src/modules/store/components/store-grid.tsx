@@ -1,19 +1,26 @@
-import { FlatList, View, StyleSheet } from 'react-native';
-import { StoreGridCard } from '@/modules/store/components/store-grid-card';
-import { StoreItem } from '@/modules/store/store-type';
 import { Spacing } from '@/commons/constants/theme';
+import { StoreGridCardVisual } from '@/modules/store/components/store-grid-card-visual';
+import { type StoreItem } from '@/modules/store/store-type';
+import { FlatList, StyleSheet, View } from 'react-native';
 
 type StoreGridProps = {
   items: StoreItem[];
-  onBeforeNavigate?: () => void;
+  favoriteMatchesById?: Record<string, boolean>;
 };
 
-export function StoreGrid({ items }: StoreGridProps) {
-  const renderStoreItem = ({ item }: { item: StoreItem }) => (
-    <View style={styles.gridItem}>
-      <StoreGridCard item={item} />
-    </View>
-  );
+export function StoreGrid({ items, favoriteMatchesById }: StoreGridProps) {
+  const renderStoreItem = ({ item }: { item: StoreItem }) => {
+    const favoriteLookupId = item.favoriteTargetId ?? item.itemAssetId;
+
+    return (
+      <View style={styles.gridItem}>
+        <StoreGridCardVisual
+          item={item}
+          isFavorite={favoriteLookupId ? !!favoriteMatchesById?.[favoriteLookupId] : false}
+        />
+      </View>
+    );
+  };
 
   return (
     <FlatList

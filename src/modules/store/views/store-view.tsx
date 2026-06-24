@@ -8,8 +8,8 @@ import { useTheme } from '@/commons/hooks/use-theme';
 import { type Account } from '@/modules/account/account-type';
 import { getLoginHref } from '@/modules/account/helpers/get-account-navigation-href';
 import { StoreBundleCard, getStoreBundleCardWidth } from '@/modules/store/components/store-bundle-card';
-import { StoreGrid } from '@/modules/store/components/store-grid';
 import { StoreSectionSheet } from '@/modules/store/components/store-section-sheet';
+import { ThreadedStoreGrid } from '@/modules/store/threaded-store-grid';
 import {
   type StoreCarouselCard,
   type StoreSnapshot,
@@ -40,7 +40,10 @@ type StoreViewProps = {
   handleSheetBeforeNavigate: () => void;
   carouselCards: StoreCarouselCard[];
   hasBundleCarousel: boolean;
+  favoriteMatchesById: Record<string, boolean>;
 };
+
+export type { StoreViewProps };
 
 export function StoreView({
   account,
@@ -55,6 +58,7 @@ export function StoreView({
   handleSheetBeforeNavigate,
   carouselCards,
   hasBundleCarousel,
+  favoriteMatchesById,
 }: StoreViewProps) {
   const theme = useTheme();
   const { width: windowWidth } = useWindowDimensions();
@@ -149,7 +153,7 @@ export function StoreView({
           {snapshot.dailyOffers.length > 0 && (
             <View style={styles.section}>
               <SectionLabel title="Daily Store" expiresAt={snapshot.dailyResetAt} />
-              <StoreGrid items={snapshot.dailyOffers} />
+              <ThreadedStoreGrid items={snapshot.dailyOffers} favoriteMatchesById={favoriteMatchesById} />
             </View>
           )}
 
@@ -157,7 +161,7 @@ export function StoreView({
           {snapshot.accessoryOffers.length > 0 && (
             <View style={styles.section}>
               <SectionLabel title="Accessories" expiresAt={snapshot.accessoryResetAt} />
-              <StoreGrid items={snapshot.accessoryOffers} />
+              <ThreadedStoreGrid items={snapshot.accessoryOffers} favoriteMatchesById={favoriteMatchesById} />
             </View>
           )}
         </ScrollView>

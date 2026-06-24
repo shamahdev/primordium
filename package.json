@@ -1,7 +1,7 @@
 {
   "name": "primordium",
   "version": "0.1.4",
-  "main": "expo-router/entry",
+  "main": "index.js",
   "author": {
     "name": "shamahdev",
     "url": "https://github.com/shamahdev"
@@ -33,6 +33,7 @@
     "@gorhom/bottom-sheet": "^5.2.14",
     "@legendapp/list": "^3.0.6",
     "@preeternal/react-native-cookie-manager": "^6.3.2",
+    "@react-native-runtimes/core": "^0.1.0-alpha.0",
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~56.0.11",
     "expo-background-task": "~56.0.18",
@@ -56,6 +57,7 @@
     "react-dom": "19.2.3",
     "react-native": "0.85.3",
     "react-native-gesture-handler": "~2.31.1",
+    "react-native-nitro-modules": "^0.35.9",
     "react-native-pager-view": "8.0.1",
     "react-native-reanimated": "4.3.1",
     "react-native-safe-area-context": "~5.7.0",
