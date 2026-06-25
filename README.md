@@ -40,6 +40,14 @@ Android APK builds are published on the [GitHub Releases page](https://github.co
 - **Session Recovery** - Stored Riot sessions are refreshed in the background when possible, with reauth prompts when Riot requires a fresh login.
 - **Update Checks** - In-app release banner points users to newer GitHub Releases builds.
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/store-screenshot.png" alt="Store" width="32%" />
+  <img src="docs/catalog-screenshot.png" alt="Catalog" width="32%" />
+  <img src="docs/notification-screenshot.png" alt="Notifications" width="32%" />
+</p>
+
 ## Architecture
 
 Primordium uses Expo Router with vertical domain modules under `src/modules`.
