@@ -1,5 +1,5 @@
-import { AccountOnboardingView } from '@/modules/account/views/account-onboarding-view';
+import { AccountOnboardingView } from "@/modules/account/views/account-onboarding-view";
 
 export default function OnboardingScreen() {
-  return <AccountOnboardingView />;
+	return <AccountOnboardingView />;
 }

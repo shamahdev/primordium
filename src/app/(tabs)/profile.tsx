@@ -1,5 +1,5 @@
-import { AccountProfileView } from '@/modules/account/views/account-profile-view';
+import { AccountProfileView } from "@/modules/account/views/account-profile-view";
 
 export default function ProfileScreen() {
-  return <AccountProfileView />;
+	return <AccountProfileView />;
 }

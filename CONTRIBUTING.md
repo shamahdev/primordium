@@ -42,20 +42,12 @@ npm install
 npm start
 
 # Or target a specific platform
-npm run ios:dev
-npm run android:dev
+npm run ios
+npm run android
 npm run web
-
-# Environment variants (development / preview / production)
-npm run android:dev
-npm run android:preview
-npm run android:prod
-npm run ios:dev
-npm run ios:preview
-npm run ios:prod
 ```
 
-Environment variants set `APP_VARIANT` which controls the app name and bundle identifier via `app.config.js`.
+> **Android note:** `expo-notifications` remote push only works in a development build, not Expo Go. `npm run android` builds and installs the Primordium dev client; `npm run start` serves JS to it via `--dev-client`. Do not scan the QR with Expo Go — open the installed `Primordium` app instead.
 
 ## Development Workflow
 

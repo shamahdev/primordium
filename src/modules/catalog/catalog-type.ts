@@ -1,152 +1,152 @@
-import type { StoreItemRarity } from '@/modules/store/store-type';
+import type { StoreItemRarity } from "@/modules/store/store-type";
 
-export type CatalogItemType = CosmeticCatalogItem['itemType'];
+export type CatalogItemType = CosmeticCatalogItem["itemType"];
 export type CatalogRarity = StoreItemRarity;
 
 export type CatalogSection = {
-  key: string;
-  title: string;
-  data: CatalogListItem[];
+	key: string;
+	title: string;
+	data: CatalogListItem[];
 };
 
 export type CatalogRenderItem =
-  | { kind: 'header'; key: string; title: string }
-  | { kind: 'item'; key: string; item: CatalogListItem };
+	| { kind: "header"; key: string; title: string }
+	| { kind: "item"; key: string; item: CatalogListItem };
 
 export type StoreAsset = {
-  title: string;
-  imageUrl?: string;
-  largeImageUrl?: string;
-  wideImageUrl?: string;
-  animationUrl?: string;
-  rarity?: 'select' | 'deluxe' | 'premium' | 'exclusive' | 'ultra';
+	title: string;
+	imageUrl?: string;
+	largeImageUrl?: string;
+	wideImageUrl?: string;
+	animationUrl?: string;
+	rarity?: "select" | "deluxe" | "premium" | "exclusive" | "ultra";
 };
 
 export type CosmeticCatalogItem = StoreAsset & {
-  id: string;
-  itemType: 'skin' | 'buddy' | 'spray' | 'card' | 'title' | 'flex';
+	id: string;
+	itemType: "skin" | "buddy" | "spray" | "card" | "title" | "flex";
 };
 
 export type CatalogListItem = CosmeticCatalogItem & {
-  searchText: string;
-  favoritedAt?: string;
+	searchText: string;
+	favoritedAt?: string;
 };
 
 export type SkinDetailChroma = {
-  uuid: string;
-  displayName: string;
-  displayIcon?: string;
-  fullRender?: string;
-  swatch?: string;
+	uuid: string;
+	displayName: string;
+	displayIcon?: string;
+	fullRender?: string;
+	swatch?: string;
 };
 
 export type SkinDetailLevel = {
-  uuid: string;
-  displayName: string;
-  displayIcon?: string;
-  streamedVideo?: string;
-  levelItem?: string;
+	uuid: string;
+	displayName: string;
+	displayIcon?: string;
+	streamedVideo?: string;
+	levelItem?: string;
 };
 
 export type SkinDetailAsset = {
-  uuid: string;
-  title: string;
-  displayIcon?: string;
-  rarity?: StoreAsset['rarity'];
-  chromas: SkinDetailChroma[];
-  levels: SkinDetailLevel[];
+	uuid: string;
+	title: string;
+	displayIcon?: string;
+	rarity?: StoreAsset["rarity"];
+	chromas: SkinDetailChroma[];
+	levels: SkinDetailLevel[];
 };
 
 export type BundleAsset = {
-  uuid: string;
-  displayName: string;
-  displayIcon?: string | null;
-  displayIcon2?: string | null;
-  verticalPromoImage?: string | null;
+	uuid: string;
+	displayName: string;
+	displayIcon?: string | null;
+	displayIcon2?: string | null;
+	verticalPromoImage?: string | null;
 };
 
 export type SkinAsset = {
-  uuid: string;
-  displayName: string;
-  contentTierUuid?: string | null;
-  displayIcon?: string | null;
-  chromas: {
-    uuid: string;
-    displayName: string;
-    displayIcon?: string | null;
-    fullRender?: string | null;
-    swatch?: string | null;
-  }[];
-  levels: {
-    uuid: string;
-    displayName: string;
-    displayIcon?: string | null;
-    streamedVideo?: string | null;
-    levelItem?: string | null;
-  }[];
+	uuid: string;
+	displayName: string;
+	contentTierUuid?: string | null;
+	displayIcon?: string | null;
+	chromas: {
+		uuid: string;
+		displayName: string;
+		displayIcon?: string | null;
+		fullRender?: string | null;
+		swatch?: string | null;
+	}[];
+	levels: {
+		uuid: string;
+		displayName: string;
+		displayIcon?: string | null;
+		streamedVideo?: string | null;
+		levelItem?: string | null;
+	}[];
 };
 
 export type BuddyAsset = {
-  uuid: string;
-  displayName: string;
-  displayIcon?: string | null;
-  levels: {
-    uuid: string;
-    displayIcon?: string | null;
-  }[];
+	uuid: string;
+	displayName: string;
+	displayIcon?: string | null;
+	levels: {
+		uuid: string;
+		displayIcon?: string | null;
+	}[];
 };
 
 export type PlayerCardAsset = {
-  uuid: string;
-  displayName: string;
-  displayIcon?: string | null;
-  largeArt?: string | null;
-  wideArt?: string | null;
+	uuid: string;
+	displayName: string;
+	displayIcon?: string | null;
+	largeArt?: string | null;
+	wideArt?: string | null;
 };
 
 export type SprayAsset = {
-  uuid: string;
-  displayName: string;
-  displayIcon?: string | null;
-  fullIcon?: string | null;
-  fullTransparentIcon?: string | null;
-  animationGif?: string | null;
+	uuid: string;
+	displayName: string;
+	displayIcon?: string | null;
+	fullIcon?: string | null;
+	fullTransparentIcon?: string | null;
+	animationGif?: string | null;
 };
 
 export type PlayerTitleAsset = {
-  uuid: string;
-  displayName?: string | null;
-  titleText?: string | null;
+	uuid: string;
+	displayName?: string | null;
+	titleText?: string | null;
 };
 
 export type ValorantApiResponse<T> = {
-  data?: T[];
+	data?: T[];
 };
 
 export type ItemAssetCatalog = {
-  items: Map<string, StoreAsset>;
-  skinDetails: Map<string, SkinDetailAsset>;
-  catalog: CosmeticCatalogItem[];
-  canonicalItems: Map<string, CosmeticCatalogItem>;
+	items: Map<string, StoreAsset>;
+	skinDetails: Map<string, SkinDetailAsset>;
+	catalog: CosmeticCatalogItem[];
+	canonicalItems: Map<string, CosmeticCatalogItem>;
 };
 
 export type CompetitiveTier = {
-  tier: number;
-  tierName: string;
-  division: string;
-  color: string;
+	tier: number;
+	tierName: string;
+	division: string;
+	color: string;
 };
 
 export type MapAsset = {
-  uuid: string;
-  displayName: string;
-  listViewIcon?: string;
-  splash?: string;
+	uuid: string;
+	displayName: string;
+	listViewIcon?: string;
+	splash?: string;
 };
 
 export type AgentAsset = {
-  uuid: string;
-  displayName: string;
-  displayIcon?: string;
-  role?: string;
+	uuid: string;
+	displayName: string;
+	displayIcon?: string;
+	role?: string;
 };
