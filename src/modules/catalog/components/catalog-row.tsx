@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/commons/components/themed-text';
 import { ThemedView } from '@/commons/components/themed-view';
-import { Spacing } from '@/commons/constants/theme';
+import { OwnedAccent, Spacing } from '@/commons/constants/theme';
 import { useTheme } from '@/commons/hooks/use-theme';
 import { FavoriteStarColor } from '../catalog-constants';
 import { getCatalogTypeLabel, getCatalogRarityLabel, getCatalogRarityIcon } from '../catalog-presentation';
@@ -15,9 +15,11 @@ import type { CatalogListItem } from '../catalog-type';
 export const CatalogRow = React.memo(function CatalogRow({
   item,
   isFavorite,
+  isOwned,
 }: {
   item: CatalogListItem;
   isFavorite: boolean;
+  isOwned: boolean;
 }) {
   const theme = useTheme();
   const typeLabel = getCatalogTypeLabel(item.itemType);
@@ -39,6 +41,7 @@ export const CatalogRow = React.memo(function CatalogRow({
 
   return (
     <Pressable onPress={openItem} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+      {isOwned ? <View style={styles.ownedStripe} /> : null}
       <ThemedView type="backgroundElement" style={styles.thumbnail}>
         {item.imageUrl ? (
           <Image source={item.imageUrl} contentFit="contain" style={styles.thumbnailImage} />
@@ -81,6 +84,15 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.75,
+  },
+  ownedStripe: {
+    position: 'absolute',
+    left: 0,
+    top: Spacing.one,
+    bottom: Spacing.one,
+    width: 3,
+    borderRadius: 2,
+    backgroundColor: OwnedAccent,
   },
   thumbnail: {
     width: 56,

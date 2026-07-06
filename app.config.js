@@ -1,8 +1,7 @@
 const IS_DEV = process.env.APP_VARIANT === 'development';
 const IS_PREVIEW = process.env.APP_VARIANT === 'preview';
-const IS_PRODUCTION = !IS_DEV && !IS_PREVIEW;
 
-function getUniqueIdentifier() {
+function getIosBundleIdentifier() {
   if (IS_DEV) {
     return 'dev.shamah.primordium.dev';
   }
@@ -36,7 +35,7 @@ export default ({ config }) => ({
       'expo-build-properties',
       {
         android: {
-          ...(IS_PRODUCTION ? { buildArchs: ['arm64-v8a'] } : {}),
+          buildArchs: ['arm64-v8a'],
           enableBundleCompression: true,
           enableMinifyInReleaseBuilds: true,
           enableShrinkResourcesInReleaseBuilds: true,
@@ -45,14 +44,15 @@ export default ({ config }) => ({
     ],
     'expo-background-task',
     'expo-notifications',
+    './plugins/with-android-flavors',
   ],
   ios: {
     ...config.ios,
-    bundleIdentifier: getUniqueIdentifier(),
+    bundleIdentifier: getIosBundleIdentifier(),
   },
   android: {
     ...config.android,
-    package: getUniqueIdentifier(),
+    package: 'dev.shamah.primordium',
     permissions: [
       ...(config.android?.permissions ?? []),
       'android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS',

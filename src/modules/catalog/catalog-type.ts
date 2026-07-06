@@ -1,8 +1,10 @@
-export type CatalogFilter = 'all' | CosmeticCatalogItem['itemType'];
-export type CatalogMode = 'all' | 'favorites';
+import type { StoreItemRarity } from '@/modules/store/store-type';
+
+export type CatalogItemType = CosmeticCatalogItem['itemType'];
+export type CatalogRarity = StoreItemRarity;
 
 export type CatalogSection = {
-  key: CatalogFilter;
+  key: string;
   title: string;
   data: CatalogListItem[];
 };
@@ -126,4 +128,25 @@ export type ItemAssetCatalog = {
   skinDetails: Map<string, SkinDetailAsset>;
   catalog: CosmeticCatalogItem[];
   canonicalItems: Map<string, CosmeticCatalogItem>;
+};
+
+export type CompetitiveTier = {
+  tier: number;
+  tierName: string;
+  division: string;
+  color: string;
+};
+
+export type MapAsset = {
+  uuid: string;
+  displayName: string;
+  listViewIcon?: string;
+  splash?: string;
+};
+
+export type AgentAsset = {
+  uuid: string;
+  displayName: string;
+  displayIcon?: string;
+  role?: string;
 };

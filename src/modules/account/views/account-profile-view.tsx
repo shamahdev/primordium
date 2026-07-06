@@ -8,6 +8,7 @@ import { ThemedView } from '@/commons/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/commons/constants/theme';
 import { useTheme } from '@/commons/hooks/use-theme';
 import { useAccountProfileViewModel } from '@/modules/account/use-account-profile-view-model';
+import { MatchCarousel } from '@/modules/companion/components/match-carousel';
 import { requestIgnoreBatteryOptimizations } from '@/modules/favorite/adapters/favorite-battery-optimization.adapter';
 
 export function AccountProfileView() {
@@ -24,6 +25,8 @@ export function AccountProfileView() {
     favoritesCount,
     latestVersion,
     currentVersion,
+    matches,
+    matchesLoading,
     confirmLogout,
     reauthenticate,
     openRelease,
@@ -68,6 +71,13 @@ export function AccountProfileView() {
           </ThemedView>
           <InfoRow label="Level" value={snapshot ? String(snapshot.level) : '--'} />
           <InfoRow label="XP" value={snapshot ? snapshot.xp.toLocaleString() : '--'} />
+        </ThemedView>
+
+        <ThemedView type="backgroundElement" style={styles.section}>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.sectionTitle}>
+            RECENT MATCHES
+          </ThemedText>
+          <MatchCarousel matches={matches} loading={matchesLoading} />
         </ThemedView>
 
         <ThemedView type="backgroundElement" style={styles.section}>

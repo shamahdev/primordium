@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import type { Account, AccountProfile, AccountTokens, AccountCookie } from '@/modules/account/account-type';
+import type { CompanionRank } from '@/modules/companion/companion-type';
 import { saveTokens, saveCookies, deleteAuthMaterial } from '@/modules/account/adapters/account-secure-storage.adapter';
 import type { StoreSnapshot } from '@/modules/store/store-type';
 
@@ -19,6 +20,7 @@ type AccountStoreState = {
     cookies?: AccountCookie[],
   ) => Promise<void>;
   setProfileSnapshot: (accountId: string, snapshot: AccountProfile) => void;
+  setRankSnapshot: (accountId: string, snapshot: CompanionRank) => void;
   setStoreSnapshot: (accountId: string, snapshot: StoreSnapshot) => void;
   markNeedsReauth: (accountId: string) => void;
   removeAccount: (accountId: string) => Promise<string | null>;
@@ -57,6 +59,7 @@ export const useAccountStore = create<AccountStoreState>()(
             ...account,
             createdAt: existing?.createdAt ?? account.createdAt,
             profileSnapshot: existing?.profileSnapshot,
+            rankSnapshot: existing?.rankSnapshot,
             storeSnapshot: existing?.storeSnapshot,
             status: 'ready',
             updatedAt: new Date().toISOString(),
@@ -73,6 +76,15 @@ export const useAccountStore = create<AccountStoreState>()(
           accounts: state.accounts.map((account) =>
             account.id === accountId
               ? { ...account, profileSnapshot: snapshot, updatedAt: new Date().toISOString() }
+              : account,
+          ),
+        }));
+      },
+      setRankSnapshot: (accountId, snapshot) => {
+        set((state) => ({
+          accounts: state.accounts.map((account) =>
+            account.id === accountId
+              ? { ...account, rankSnapshot: snapshot, updatedAt: new Date().toISOString() }
               : account,
           ),
         }));

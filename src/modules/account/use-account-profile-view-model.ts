@@ -11,6 +11,7 @@ import { log } from '@/commons/lib/logger';
 import { getLoginHref, getOnboardingHref, getSwitchAccountHref } from '@/modules/account/helpers/get-account-navigation-href';
 import { AccountService } from '@/modules/account/account-service';
 import { useAccountStore } from '@/modules/account/account-store';
+import { useCompanionViewModel } from '@/modules/companion/use-companion-view-model';
 import { useFavoriteAlertStore } from '@/modules/favorite/favorite-alert-store';
 import { useFavoriteStore } from '@/modules/favorite/favorite-store';
 import { useUpdateCheck } from '@/commons/hooks/use-update-check';
@@ -33,6 +34,7 @@ export function useAccountProfileViewModel() {
   const [error, setError] = React.useState<string | null>(null);
   const [ignoringBatteryOptimizations, setIgnoringBatteryOptimizations] = React.useState(true);
   const [updatingAlerts, setUpdatingAlerts] = React.useState(false);
+  const companion = useCompanionViewModel();
 
   const checkBatteryOptimizationStatus = React.useCallback(async () => {
     const ignoring = await getBatteryOptimizationStatus();
@@ -163,6 +165,9 @@ export function useAccountProfileViewModel() {
       favoritesCount: 0,
       latestVersion: null,
       currentVersion: '0.0.0',
+      rank: null,
+      matches: [],
+      matchesLoading: false,
       confirmLogout: () => {},
       reauthenticate: () => {},
       openRelease: () => {},
@@ -185,6 +190,9 @@ export function useAccountProfileViewModel() {
     favoritesCount,
     latestVersion,
     currentVersion: Constants.expoConfig?.version ?? '0.0.0',
+    rank: companion.rank,
+    matches: companion.matches,
+    matchesLoading: companion.matchesLoading,
     confirmLogout,
     reauthenticate,
     openRelease,

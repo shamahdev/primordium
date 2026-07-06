@@ -362,19 +362,39 @@ function PriceDisplay({ amount, currency, rarity }: { amount: string; currency: 
 function LevelRow({ level, index, isActive, onPlay }: { level: SkinDetailLevel; index: number; isActive: boolean; onPlay: () => void }) {
   const theme = useTheme();
   const levelLabel = getLevelLabel(level, index);
+  const hasVideo = !!level.streamedVideo;
 
-  return (
-    <View style={[styles.levelRow, { backgroundColor: theme.backgroundElement }]}>
+  const content = (
+    <>
+      <View style={[styles.playButton, { backgroundColor: isActive ? theme.primary : hasVideo ? theme.backgroundSelected : 'transparent' }]}>
+        {hasVideo ? (
+          <ThemedText type="smallBold" style={{ color: isActive ? theme.primaryForeground : theme.text }}>▶</ThemedText>
+        ) : null}
+      </View>
       <View style={styles.levelInfo}>
         <ThemedText type="smallBold">Level {index + 1}</ThemedText>
         {levelLabel && <ThemedText type="small" themeColor="textSecondary">{levelLabel}</ThemedText>}
       </View>
-      {level.streamedVideo ? (
-        <Pressable onPress={onPlay} hitSlop={8} style={[styles.playButton, { backgroundColor: isActive ? theme.primary : theme.backgroundSelected }]}>
-          <ThemedText type="smallBold" style={{ color: isActive ? theme.primaryForeground : theme.text }}>▶</ThemedText>
-        </Pressable>
-      ) : null}
-    </View>
+    </>
+  );
+
+  if (!hasVideo) {
+    return (
+      <View style={[styles.levelRow, { backgroundColor: theme.backgroundElement }]}>
+        {content}
+      </View>
+    );
+  }
+
+  return (
+    <Pressable
+      onPress={onPlay}
+      style={({ pressed }) => [styles.levelRow, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement }]}
+      accessibilityRole="button"
+      accessibilityLabel={`Play preview for level ${index + 1}${levelLabel ? `: ${levelLabel}` : ''}`}
+    >
+      {content}
+    </Pressable>
   );
 }
 
@@ -513,7 +533,7 @@ const styles = StyleSheet.create({
   levelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: Spacing.three,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     borderRadius: Spacing.three,

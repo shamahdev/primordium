@@ -1,9 +1,12 @@
 import type {
+  AgentAsset,
   BundleAsset,
   BuddyAsset,
   CatalogListItem,
+  CompetitiveTier,
   CosmeticCatalogItem,
   ItemAssetCatalog,
+  MapAsset,
   PlayerCardAsset,
   PlayerTitleAsset,
   SkinAsset,
@@ -23,6 +26,9 @@ let itemAssetsPromise: Promise<ItemAssetCatalog> | null = null;
 let itemAssetsRefreshPromise: Promise<ItemAssetCatalog> | null = null;
 let preparedCatalogItemsPromise: Promise<CatalogListItem[]> | null = null;
 let preparedCatalogItemsRefreshPromise: Promise<CatalogListItem[]> | null = null;
+let competitiveTiersPromise: Promise<Map<number, CompetitiveTier>> | null = null;
+let mapsPromise: Promise<Map<string, MapAsset>> | null = null;
+let agentsPromise: Promise<Map<string, AgentAsset>> | null = null;
 
 const CONTENT_TIER_TO_RARITY: Record<string, StoreAsset['rarity']> = {
   '12683d76-48d7-84a3-4e09-6985794f0445': 'select',
@@ -228,6 +234,37 @@ async function fetchCatalog<T>(path: string) {
   }
 }
 
+async function loadCompetitiveTiers() {
+  const episodes = await fetchCatalog<{ tiers: CompetitiveTier[] }>('competitivetiers');
+  const latest = episodes[episodes.length - 1];
+  const tiers = new Map<number, CompetitiveTier>();
+  if (latest?.tiers) {
+    for (const tier of latest.tiers) {
+      tiers.set(tier.tier, tier);
+    }
+  }
+  return tiers;
+}
+
+async function loadMaps() {
+  const maps = await fetchCatalog<MapAsset>('maps');
+  return new Map<string, MapAsset>(maps.map((map) => [map.uuid, map]));
+}
+
+async function loadAgents() {
+  const agents = await fetchCatalog<AgentAsset & { role?: { displayName?: string | null } | null }>('agents');
+  return new Map<string, AgentAsset>(
+    agents
+      .filter((agent) => agent.role)
+      .map((agent) => [agent.uuid, {
+        uuid: agent.uuid,
+        displayName: agent.displayName,
+        displayIcon: agent.displayIcon ?? undefined,
+        role: agent.role?.displayName ?? undefined,
+      }]),
+  );
+}
+
 export const CatalogService = {
   async getBundleAsset(bundleId: string, { refreshOnMiss = false } = {}) {
     const assets = await getBundleAssets();
@@ -293,5 +330,41 @@ export const CatalogService = {
   async getCanonicalItem(itemId: string) {
     const { canonicalItems } = await getItemAssets();
     return canonicalItems.get(itemId);
+  },
+
+  async getCompetitiveTiers() {
+    if (!competitiveTiersPromise) {
+      competitiveTiersPromise = loadCompetitiveTiers();
+    }
+    return competitiveTiersPromise;
+  },
+
+  async getCompetitiveTier(tier: number) {
+    const tiers = await this.getCompetitiveTiers();
+    return tiers.get(tier) ?? null;
+  },
+
+  async getMaps() {
+    if (!mapsPromise) {
+      mapsPromise = loadMaps();
+    }
+    return mapsPromise;
+  },
+
+  async getMap(mapId: string) {
+    const maps = await this.getMaps();
+    return maps.get(mapId) ?? null;
+  },
+
+  async getAgents() {
+    if (!agentsPromise) {
+      agentsPromise = loadAgents();
+    }
+    return agentsPromise;
+  },
+
+  async getAgent(agentId: string) {
+    const agents = await this.getAgents();
+    return agents.get(agentId) ?? null;
   },
 };

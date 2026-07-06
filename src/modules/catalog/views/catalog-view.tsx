@@ -16,33 +16,45 @@ import { ThemedView } from '@/commons/components/themed-view';
 import { Spacing } from '@/commons/constants/theme';
 import { useTheme } from '@/commons/hooks/use-theme';
 import { CatalogFilterChip } from '../components/catalog-filter-chip';
-import { CatalogModeButton } from '../components/catalog-mode-button';
+import { CatalogFavoriteToggleFab } from '../components/catalog-favorite-toggle-fab';
 import { CatalogRow } from '../components/catalog-row';
 import { CatalogSectionHeader } from '../components/catalog-section-header';
-
-import type { CatalogFilter, CatalogListItem, CatalogMode, CatalogRenderItem } from '../catalog-type';
+import { ALL_RARITIES_LABEL, CATALOG_TYPE_ORDER, FILTER_LABELS, RARITY_LABELS, RARITY_ORDER } from '../catalog-constants';
+import { getCatalogRarityColor } from '../catalog-presentation';
+import type { CatalogItemType, CatalogListItem, CatalogRarity, CatalogRenderItem, CatalogSection } from '../catalog-type';
+import type { OwnedStatus } from '../use-catalog-view-model';
 
 type CatalogViewProps = {
   error: string | null;
   retryCatalog: () => void;
-  mode: CatalogMode;
-  filter: CatalogFilter;
+  favoritesOnly: boolean;
+  typeFilter: CatalogItemType[];
+  rarityFilter: CatalogRarity[];
+  ownedStatus: OwnedStatus;
+  ownedItemIds: Set<string>;
   search: string;
-  sections: { key: CatalogFilter; title: string; data: CatalogListItem[] }[];
+  sections: CatalogSection[];
   resultCount: number;
   loading: boolean;
   favoriteItems: CatalogListItem[];
   favoritesById: Record<string, unknown>;
   handleSearchChange: (text: string) => void;
-  handleFilterChange: (type: CatalogFilter) => void;
-  handleModeChange: (nextMode: CatalogMode) => void;
+  handleToggleType: (type: CatalogItemType) => void;
+  handleClearTypes: () => void;
+  handleToggleRarity: (rarity: CatalogRarity) => void;
+  handleClearRarities: () => void;
+  handleToggleFavoritesOnly: () => void;
+  handleSetOwnedStatus: (status: OwnedStatus) => void;
 };
 
 export function CatalogView({
   error,
   retryCatalog,
-  mode,
-  filter,
+  favoritesOnly,
+  typeFilter,
+  rarityFilter,
+  ownedStatus,
+  ownedItemIds,
   search,
   sections,
   resultCount,
@@ -50,8 +62,12 @@ export function CatalogView({
   favoriteItems,
   favoritesById,
   handleSearchChange,
-  handleFilterChange,
-  handleModeChange,
+  handleToggleType,
+  handleClearTypes,
+  handleToggleRarity,
+  handleClearRarities,
+  handleToggleFavoritesOnly,
+  handleSetOwnedStatus,
 }: CatalogViewProps) {
   const theme = useTheme();
 
@@ -73,9 +89,15 @@ export function CatalogView({
         return <CatalogSectionHeader title={item.title} />;
       }
 
-      return <CatalogRow item={item.item} isFavorite={!!favoritesById[item.item.id]} />;
+      return (
+        <CatalogRow
+          item={item.item}
+          isFavorite={!!favoritesById[item.item.id]}
+          isOwned={ownedItemIds.has(item.item.id)}
+        />
+      );
     },
-    [favoritesById],
+    [favoritesById, ownedItemIds],
   );
 
   const getItemType = React.useCallback(
@@ -97,10 +119,6 @@ export function CatalogView({
         estimatedItemSize={72}
         ListHeaderComponent={
           <View style={styles.headerContent}>
-            <View style={[styles.modeSwitch, { backgroundColor: theme.backgroundElement }]}>
-              <CatalogModeButton label="All Items" mode="all" selected={mode === 'all'} onPress={handleModeChange} />
-              <CatalogModeButton label="Favorites" mode="favorites" selected={mode === 'favorites'} onPress={handleModeChange} />
-            </View>
             <View style={styles.searchRow}>
               <TextInput
                 value={search}
@@ -128,43 +146,67 @@ export function CatalogView({
               ) : null}
             </View>
             <View style={styles.chipRow}>
-              {(['all', 'skin', 'buddy', 'spray', 'card', 'title', 'flex'] as CatalogFilter[]).map((type) => (
+              <CatalogFilterChip label={FILTER_LABELS.all} selected={typeFilter.length === 0} onPress={handleClearTypes} />
+              {CATALOG_TYPE_ORDER.map((type) => (
                 <CatalogFilterChip
                   key={type}
-                  label={type === 'all' ? 'All' : type}
-                  selected={filter === type}
-                  type={type}
-                  onPress={handleFilterChange}
+                  label={FILTER_LABELS[type]}
+                  selected={typeFilter.includes(type)}
+                  onPress={() => handleToggleType(type)}
                 />
               ))}
             </View>
+            <View style={styles.chipRow}>
+              <CatalogFilterChip label={ALL_RARITIES_LABEL} selected={rarityFilter.length === 0} onPress={handleClearRarities} />
+              {RARITY_ORDER.map((rarity) => (
+                <CatalogFilterChip
+                  key={rarity}
+                  label={RARITY_LABELS[rarity]}
+                  selected={rarityFilter.includes(rarity)}
+                  color={getCatalogRarityColor(rarity)}
+                  onPress={() => handleToggleRarity(rarity)}
+                />
+              ))}
+            </View>
+            <View style={styles.chipRow}>
+              <CatalogFilterChip label="All" selected={ownedStatus === 'all'} onPress={() => handleSetOwnedStatus('all')} />
+              <CatalogFilterChip label="Owned" selected={ownedStatus === 'owned'} onPress={() => handleSetOwnedStatus('owned')} />
+              <CatalogFilterChip label="Not owned" selected={ownedStatus === 'notOwned'} onPress={() => handleSetOwnedStatus('notOwned')} />
+            </View>
             {!loading && !error ? (
               <ThemedText type="xsmall" themeColor="textSecondary">
-                {resultCount.toLocaleString()} {mode === 'favorites' ? 'favorites' : 'items'}
+                {resultCount.toLocaleString()} {favoritesOnly ? 'favorites' : 'items'}
               </ThemedText>
             ) : null}
           </View>
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            {loading && mode === 'all' ? (
+            {loading && !favoritesOnly ? (
               <>
                 <ActivityIndicator />
                 <ThemedText themeColor="textSecondary">Loading catalog...</ThemedText>
               </>
             ) : error ? (
               <PrimaryButton label="Retry" onPress={retryCatalog} />
-            ) : mode === 'favorites' && favoriteItems.length === 0 ? (
+            ) : rarityFilter.length > 0 ? (
+              <View style={styles.emptyStateText}>
+                <ThemedText type="smallBold">No items match the selected rarities</ThemedText>
+                <ThemedText themeColor="textSecondary" style={styles.emptyStateHint}>
+                  Rarity only applies to skins. Clear rarities or pick Skins.
+                </ThemedText>
+              </View>
+            ) : favoritesOnly && favoriteItems.length === 0 ? (
               <View style={styles.emptyStateText}>
                 <ThemedText type="smallBold">No favorites yet</ThemedText>
                 <ThemedText themeColor="textSecondary" style={styles.emptyStateHint}>
                   Open an item and tap the star.
                 </ThemedText>
               </View>
-            ) : mode === 'favorites' ? (
-              <ThemedText themeColor="textSecondary">No favorites match your search.</ThemedText>
+            ) : favoritesOnly ? (
+              <ThemedText themeColor="textSecondary">No favorites match your filters.</ThemedText>
             ) : (
-              <ThemedText themeColor="textSecondary">No items match your search.</ThemedText>
+              <ThemedText themeColor="textSecondary">No items match your filters.</ThemedText>
             )}
           </View>
         }
@@ -172,6 +214,7 @@ export function CatalogView({
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       />
+      <CatalogFavoriteToggleFab active={favoritesOnly} onPress={handleToggleFavoritesOnly} />
     </ThemedView>
   );
 }
@@ -183,7 +226,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: Spacing.four,
-    paddingBottom: Spacing.six,
+    paddingBottom: 96,
     gap: Spacing.two,
   },
   headerContent: {
@@ -210,11 +253,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
-  },
-  modeSwitch: {
-    flexDirection: 'row',
-    borderRadius: Spacing.one,
-    padding: Spacing.one,
   },
   sectionHeader: {
     letterSpacing: 1.4,

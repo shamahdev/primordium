@@ -1,4 +1,5 @@
 import type { StoreSnapshot } from '@/modules/store/store-type';
+import type { CompanionRank } from '@/modules/companion/companion-type';
 
 export const ACCOUNT_SHARDS = [
   { id: 'eu', label: 'Europe' },
@@ -33,6 +34,7 @@ export type Account = {
   createdAt: string;
   updatedAt: string;
   profileSnapshot?: AccountProfile;
+  rankSnapshot?: CompanionRank;
   storeSnapshot?: StoreSnapshot;
 };
 

@@ -3,29 +3,60 @@ import React from 'react';
 import { useAccountStore } from '@/modules/account/account-store';
 import { useFavoriteStore } from '@/modules/favorite/favorite-store';
 import { CatalogService } from './catalog-service';
-import type { CatalogFilter, CatalogListItem, CatalogMode } from './catalog-type';
+import type { CatalogItemType, CatalogListItem, CatalogRarity } from './catalog-type';
 import { getCatalogSections } from './helpers/get-catalog-sections';
 import { sortFavoriteItems } from './helpers/sort-catalog-items';
 import { toCatalogListItem } from './helpers/to-catalog-list-item';
+import { OwnedItemsService } from './owned-items-service';
 
-let catalogMemoryMode: CatalogMode = 'all';
-let catalogMemoryFilter: CatalogFilter = 'all';
+let catalogMemoryFavoritesOnly = false;
+let catalogMemoryTypeFilter: CatalogItemType[] = [];
+let catalogMemoryRarityFilter: CatalogRarity[] = [];
+let catalogMemoryOwnedStatus: OwnedStatus = 'all';
 let catalogMemorySearch = '';
+
+export type OwnedStatus = 'all' | 'owned' | 'notOwned';
 
 export function useCatalogViewModel() {
   const account = useAccountStore((state) =>
     state.accounts.find((item) => item.id === state.activeAccountId),
   );
   const [items, setItems] = React.useState<CatalogListItem[]>([]);
-  const [mode, setMode] = React.useState<CatalogMode>(catalogMemoryMode);
-  const [filter, setFilter] = React.useState<CatalogFilter>(catalogMemoryFilter);
+  const [favoritesOnly, setFavoritesOnly] = React.useState(catalogMemoryFavoritesOnly);
+  const [typeFilter, setTypeFilter] = React.useState<CatalogItemType[]>(catalogMemoryTypeFilter);
+  const [rarityFilter, setRarityFilter] = React.useState<CatalogRarity[]>(catalogMemoryRarityFilter);
+  const [ownedStatus, setOwnedStatus] = React.useState<OwnedStatus>(catalogMemoryOwnedStatus);
+  const [ownedItemIds, setOwnedItemIds] = React.useState<Set<string>>(new Set());
   const [search, setSearch] = React.useState(catalogMemorySearch);
-  const deferredMode = React.useDeferredValue(mode);
-  const deferredFilter = React.useDeferredValue(filter);
+  const deferredFavoritesOnly = React.useDeferredValue(favoritesOnly);
+  const deferredTypeFilter = React.useDeferredValue(typeFilter);
+  const deferredRarityFilter = React.useDeferredValue(rarityFilter);
+  const deferredOwnedStatus = React.useDeferredValue(ownedStatus);
   const deferredSearch = React.useDeferredValue(search);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const favoritesById = useFavoriteStore((state) => state.favoritesById);
+
+  React.useEffect(() => {
+    const currentAccount = useAccountStore.getState().accounts.find((item) => item.id === account?.id);
+    if (!currentAccount || currentAccount.status === 'needsReauth') {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const owned = await OwnedItemsService.fetchOwnedItemIds(currentAccount);
+        if (!cancelled) {
+          setOwnedItemIds(owned);
+        }
+      } catch {
+        // Owned set unavailable; badges silently absent.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [account?.id, account?.status]);
 
   const loadCatalog = React.useCallback(async (refresh = false, showLoading = true) => {
     if (showLoading) {
@@ -87,11 +118,18 @@ export function useCatalogViewModel() {
     }))),
     [favoritesById, itemsById],
   );
-  const visibleItems = deferredMode === 'favorites' ? favoriteItems : items;
+  const visibleItems = deferredFavoritesOnly ? favoriteItems : items;
 
   const sections = React.useMemo(
-    () => getCatalogSections(visibleItems, deferredMode, deferredFilter, deferredSearch),
-    [deferredFilter, deferredMode, deferredSearch, visibleItems],
+    () => getCatalogSections(visibleItems, {
+      favoritesOnly: deferredFavoritesOnly,
+      typeFilter: deferredTypeFilter,
+      rarityFilter: deferredRarityFilter,
+      ownedStatus: deferredOwnedStatus,
+      ownedItemIds,
+      search: deferredSearch,
+    }),
+    [deferredFavoritesOnly, deferredTypeFilter, deferredRarityFilter, deferredOwnedStatus, ownedItemIds, deferredSearch, visibleItems],
   );
   const resultCount = React.useMemo(
     () => sections.reduce((total, section) => total + section.data.length, 0),
@@ -102,13 +140,38 @@ export function useCatalogViewModel() {
     catalogMemorySearch = text;
     setSearch(text);
   }, []);
-  const handleFilterChange = React.useCallback((type: CatalogFilter) => {
-    catalogMemoryFilter = type;
-    setFilter(type);
+  const handleToggleType = React.useCallback((type: CatalogItemType) => {
+    setTypeFilter((prev) => {
+      const next = prev.includes(type) ? prev.filter((value) => value !== type) : [...prev, type];
+      catalogMemoryTypeFilter = next;
+      return next;
+    });
   }, []);
-  const handleModeChange = React.useCallback((nextMode: CatalogMode) => {
-    catalogMemoryMode = nextMode;
-    setMode(nextMode);
+  const handleClearTypes = React.useCallback(() => {
+    catalogMemoryTypeFilter = [];
+    setTypeFilter([]);
+  }, []);
+  const handleToggleRarity = React.useCallback((rarity: CatalogRarity) => {
+    setRarityFilter((prev) => {
+      const next = prev.includes(rarity) ? prev.filter((value) => value !== rarity) : [...prev, rarity];
+      catalogMemoryRarityFilter = next;
+      return next;
+    });
+  }, []);
+  const handleClearRarities = React.useCallback(() => {
+    catalogMemoryRarityFilter = [];
+    setRarityFilter([]);
+  }, []);
+  const handleToggleFavoritesOnly = React.useCallback(() => {
+    setFavoritesOnly((prev) => {
+      const next = !prev;
+      catalogMemoryFavoritesOnly = next;
+      return next;
+    });
+  }, []);
+  const handleSetOwnedStatus = React.useCallback((status: OwnedStatus) => {
+    catalogMemoryOwnedStatus = status;
+    setOwnedStatus(status);
   }, []);
 
   return {
@@ -116,8 +179,11 @@ export function useCatalogViewModel() {
     loading,
     error,
     retryCatalog,
-    mode,
-    filter,
+    favoritesOnly,
+    typeFilter,
+    rarityFilter,
+    ownedStatus,
+    ownedItemIds,
     search,
     sections,
     resultCount,
@@ -125,7 +191,11 @@ export function useCatalogViewModel() {
     favoriteItems,
     favoritesById,
     handleSearchChange,
-    handleFilterChange,
-    handleModeChange,
+    handleToggleType,
+    handleClearTypes,
+    handleToggleRarity,
+    handleClearRarities,
+    handleToggleFavoritesOnly,
+    handleSetOwnedStatus,
   };
 }
