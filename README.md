@@ -79,6 +79,39 @@ Key implementation details:
 - [Expo Router](https://docs.expo.dev/router/introduction/)
 - [Zustand](https://github.com/pmndrs/zustand)
 
+## Development
+
+### Prerequisites
+
+- Node 22+, npm
+- [Expo CLI](https://docs.expo.dev/more/expo-cli/) and [EAS CLI](https://docs.expo.dev/eas/) (logged in)
+- Android platform tools (`adb`) on PATH
+- Android phone with USB debugging enabled, connected via USB
+
+### Setup
+
+```bash
+npm install               # install deps
+npm run build:dev:android # EAS build → dev APK (first time + native changes)
+eas build:run             # install APK to USB-connected phone
+```
+
+Repeat `npm run build:dev:android` only when native dependencies or Expo config change (SDK upgrades, config plugins, native modules).
+
+### Daily loop
+
+```bash
+npm start                 # Metro on localhost + ADB reverse, hot reload enabled
+```
+
+`dev:lan` and `dev:tunnel` available as fallbacks when USB is unavailable.
+
+### Debugging native code locally
+
+```bash
+npm run android:local     # expo run:android (requires full Android SDK)
+```
+
 ## Contributing
 
 Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.

@@ -16,9 +16,10 @@
   "homepage": "https://github.com/shamahdev/primordium#readme",
   "license": "GPL-3.0-only",
   "scripts": {
-    "start": "expo start --dev-client --tunnel",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
+    "start": "expo start --dev-client --localhost",
+    "start:tunnel": "expo start --dev-client --tunnel",
+    "android": "eas build --profile development --platform android",
+    "android:local": "expo run:android",
     "lint": "npx @biomejs/biome lint --write ./src",
     "preinstall": "npx only-allow npm"
   },
