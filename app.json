@@ -1,47 +1,47 @@
 {
-	"expo": {
-		"name": "Primordium",
-		"slug": "primordium",
-		"version": "0.1.4",
-		"orientation": "portrait",
-		"icon": "./assets/images/icon.png",
-		"scheme": "primordium",
-		"userInterfaceStyle": "dark",
-		"android": {
-			"adaptiveIcon": {
-				"foregroundImage": "./assets/images/adaptive-icon.png",
-				"monochromeImage": "./assets/images/monochrome-icon.png",
-				"backgroundColor": "#E6112E"
-			},
-			"predictiveBackGestureEnabled": false
-		},
-		"web": {
-			"output": "static",
-			"favicon": "./assets/images/favicon.png"
-		},
-		"plugins": [
-			"expo-router",
-			[
-				"expo-splash-screen",
-				{
-					"backgroundColor": "#E6112E",
-					"image": "./assets/images/splash-icon.png"
-				}
-			],
-			"expo-secure-store",
-			"expo-image",
-			"expo-video",
-			"expo-web-browser"
-		],
-		"experiments": {
-			"typedRoutes": true,
-			"reactCompiler": true
-		},
-		"extra": {
-			"router": {},
-			"eas": {
-				"projectId": "cd80b487-711c-4835-be99-66a95a7ae988"
-			}
-		}
-	}
+  "expo": {
+    "name": "Primordium",
+    "slug": "primordium",
+    "version": "0.1.5",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "primordium",
+    "userInterfaceStyle": "dark",
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "monochromeImage": "./assets/images/monochrome-icon.png",
+        "backgroundColor": "#E6112E"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#E6112E",
+          "image": "./assets/images/splash-icon.png"
+        }
+      ],
+      "expo-secure-store",
+      "expo-image",
+      "expo-video",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cd80b487-711c-4835-be99-66a95a7ae988"
+      }
+    }
+  }
 }
