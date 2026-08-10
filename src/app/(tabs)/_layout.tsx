@@ -86,7 +86,12 @@ export default function AuthenticatedTabsLayout() {
 						height: 0,
 					},
 					tabBarStyle: {
-						paddingBottom: insets.bottom,
+						backgroundColor: Colors.dark.background,
+						borderTopWidth: StyleSheet.hairlineWidth,
+						borderTopColor: "rgba(255,255,255,0.06)",
+						paddingBottom: Math.max(insets.bottom, Spacing.one),
+						paddingTop: Spacing.one,
+						height: 60 + Math.max(insets.bottom, Spacing.one),
 					},
 					tabBarItemStyle: styles.item,
 					tabBarLabelStyle: styles.label,

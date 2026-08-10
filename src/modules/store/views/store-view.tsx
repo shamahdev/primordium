@@ -143,9 +143,10 @@ export function StoreView({
 				)}
 
 				<ScrollView
+					style={styles.scroll}
 					contentContainerStyle={styles.content}
 					showsVerticalScrollIndicator={false}
-					contentInsetAdjustmentBehavior="automatic"
+					contentInsetAdjustmentBehavior="never"
 					refreshControl={
 						<RefreshControl
 							refreshing={refreshing}
@@ -239,12 +240,16 @@ export function StoreView({
 const styles = StyleSheet.create({
 	screen: {
 		flex: 1,
-		alignItems: "center",
 	},
 	safeArea: {
 		flex: 1,
 		width: "100%",
 		maxWidth: MaxContentWidth,
+		alignSelf: "center",
+	},
+	scroll: {
+		flex: 1,
+		width: "100%",
 	},
 	centered: {
 		flex: 1,
@@ -254,7 +259,10 @@ const styles = StyleSheet.create({
 		gap: Spacing.three,
 	},
 	content: {
-		padding: Spacing.three,
+		width: "100%",
+		maxWidth: MaxContentWidth,
+		alignSelf: "center",
+		padding: Spacing.four,
 		gap: Spacing.three,
 		paddingBottom: Spacing.six,
 	},
@@ -269,6 +277,7 @@ const styles = StyleSheet.create({
 		paddingVertical: Spacing.six,
 		alignItems: "center",
 		gap: Spacing.one,
+		paddingHorizontal: Spacing.four,
 	},
 	emptyStateHint: {
 		textAlign: "center",

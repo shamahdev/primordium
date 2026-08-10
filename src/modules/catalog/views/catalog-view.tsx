@@ -135,6 +135,8 @@ export function CatalogView({
 				getItemType={getItemType}
 				recycleItems
 				estimatedItemSize={72}
+				style={styles.list}
+				contentContainerStyle={styles.content}
 				ListHeaderComponent={
 					<View style={styles.headerContent}>
 						<View style={styles.searchRow}>
@@ -243,9 +245,8 @@ export function CatalogView({
 						)}
 					</View>
 				}
-				contentContainerStyle={styles.content}
 				showsVerticalScrollIndicator={false}
-				contentInsetAdjustmentBehavior="automatic"
+				contentInsetAdjustmentBehavior="never"
 			/>
 		</ThemedView>
 	);
@@ -254,13 +255,18 @@ export function CatalogView({
 const styles = StyleSheet.create({
 	screen: {
 		flex: 1,
-		alignItems: "center",
+	},
+	list: {
+		flex: 1,
+		width: "100%",
 	},
 	content: {
+		width: "100%",
+		maxWidth: MaxContentWidth,
+		alignSelf: "center",
 		padding: Spacing.four,
 		paddingBottom: Spacing.four,
 		gap: Spacing.two,
-		maxWidth: MaxContentWidth,
 	},
 	headerContent: {
 		gap: Spacing.three,
@@ -293,6 +299,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		gap: Spacing.three,
+		paddingHorizontal: Spacing.four,
 	},
 	emptyStateText: {
 		alignItems: "center",

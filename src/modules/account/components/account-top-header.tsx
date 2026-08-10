@@ -78,6 +78,11 @@ export function AccountTopHeader() {
 	);
 }
 
+function toRankHex(color: string) {
+	const hex = color.replace(/^#/, "").slice(0, 6);
+	return hex.length === 6 ? `#${hex}` : `#${hex.padEnd(6, "0")}`;
+}
+
 function RankPill({
 	rank,
 	update,
@@ -91,13 +96,12 @@ function RankPill({
 		hasDelta && delta >= 0 ? StatusColors.success : StatusColors.danger;
 	return (
 		<View style={styles.rankPill}>
-			<View
-				style={[
-					styles.rankDot,
-					{ backgroundColor: `#${rank.color.slice(0, 6)}` },
-				]}
-			/>
-			<ThemedText type="xsmall" style={{ color: Colors.dark.text }}>
+			<View style={[styles.rankDot, { backgroundColor: toRankHex(rank.color) }]} />
+			<ThemedText
+				type="xsmall"
+				numberOfLines={1}
+				style={{ color: Colors.dark.text, flexShrink: 1 }}
+			>
 				{rank.tierShortName} · {rank.rankedRating} RR
 			</ThemedText>
 			{hasDelta ? (
@@ -108,6 +112,7 @@ function RankPill({
 						color={deltaColor}
 					/>
 					<ThemedText type="xsmall" style={{ color: deltaColor }}>
+						{delta >= 0 ? "+" : "-"}
 						{Math.abs(delta)}
 					</ThemedText>
 				</View>
@@ -135,9 +140,10 @@ const styles = StyleSheet.create({
 	outer: {
 		alignItems: "center",
 		paddingHorizontal: Spacing.four,
-		paddingVertical: Spacing.two,
-		color: Colors.dark.text,
+		paddingVertical: Spacing.three,
 		backgroundColor: Colors.dark.background,
+		borderBottomWidth: StyleSheet.hairlineWidth,
+		borderBottomColor: "rgba(255,255,255,0.06)",
 	},
 	inner: {
 		width: "100%",
@@ -149,23 +155,30 @@ const styles = StyleSheet.create({
 	},
 	identity: {
 		flex: 1,
-		gap: Spacing.half,
+		gap: 4,
+		minWidth: 0,
 	},
 	identityRow: {
 		flex: 1,
 		flexDirection: "row",
 		alignItems: "center",
-		gap: Spacing.half,
+		gap: Spacing.two,
+		minWidth: 0,
 	},
 	rankPill: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: Spacing.half,
+		gap: 6,
+		flexWrap: "wrap",
 	},
 	rankDelta: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: Spacing.half,
+		gap: 2,
+		paddingHorizontal: 6,
+		paddingVertical: 2,
+		borderRadius: 99,
+		backgroundColor: "rgba(255,255,255,0.06)",
 	},
 	rankDot: {
 		width: 8,
@@ -175,12 +188,13 @@ const styles = StyleSheet.create({
 	balances: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: Spacing.two,
+		gap: Spacing.three,
+		flexShrink: 0,
 	},
 	balancePill: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: Spacing.half,
+		gap: Spacing.one,
 	},
 	currencyIcon: {
 		width: 16,

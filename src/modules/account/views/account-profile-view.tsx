@@ -15,7 +15,7 @@ import { ErrorBanner } from "@/commons/components/error-banner";
 import { SectionHeader } from "@/commons/components/section-header";
 import { ThemedText } from "@/commons/components/themed-text";
 import { ThemedView } from "@/commons/components/themed-view";
-import { MaxContentWidth, Radius, Spacing } from "@/commons/constants/theme";
+import { MaxContentWidth, Radius, Spacing, StatusColors } from "@/commons/constants/theme";
 import { useTheme } from "@/commons/hooks/use-theme";
 import { useAccountProfileViewModel } from "@/modules/account/use-account-profile-view-model";
 import { MatchCarousel } from "@/modules/companion/components/match-carousel";
@@ -36,14 +36,19 @@ export function AccountProfileView() {
 		favoritesCount,
 		latestVersion,
 		currentVersion,
+		rank,
+		rankLoading,
+		rankError,
 		matches,
 		matchesLoading,
+		matchesError,
 		confirmLogout,
 		reauthenticate,
 		openRelease,
 		toggleFavoriteStoreAlerts,
 		switchAccount,
 		refreshProfile,
+		refreshMatches,
 	} = useAccountProfileViewModel();
 
 	if (redirect) {
@@ -76,43 +81,105 @@ export function AccountProfileView() {
 			)}
 
 			{error && account.status !== "needsReauth" && (
-				<ErrorBanner
-					message={error}
-					actionLabel="Retry"
-					onPress={refreshProfile}
-				/>
+				<ErrorBanner message={error} actionLabel="Retry" onPress={refreshProfile} />
 			)}
 
 			<ScrollView
+				style={styles.scroll}
 				contentContainerStyle={styles.content}
 				showsVerticalScrollIndicator={false}
-				contentInsetAdjustmentBehavior="automatic"
+				contentInsetAdjustmentBehavior="never"
 				refreshControl={
 					<RefreshControl
-						refreshing={refreshing}
+						refreshing={refreshing || rankLoading || matchesLoading}
 						onRefresh={refreshProfile}
 						tintColor={theme.primary}
 					/>
 				}
 			>
+				{/* Competitive Rank */}
 				<ThemedView type="backgroundElement" style={styles.section}>
 					<SectionHeader
-						title="Progress"
-						trailing={refreshing ? <ActivityIndicator /> : null}
+						title="Competitive Rank"
+						trailing={rankLoading ? <ActivityIndicator size="small" /> : null}
 					/>
-					<InfoRow
-						label="Level"
-						value={snapshot ? String(snapshot.level) : "--"}
-					/>
-					<InfoRow
-						label="XP"
-						value={snapshot ? snapshot.xp.toLocaleString() : "--"}
-					/>
+					{rankError ? (
+						<ThemedText type="small" themeColor="textSecondary" style={styles.rankError}>
+							{rankError}
+						</ThemedText>
+					) : rank?.rank ? (
+						<View style={styles.rankBlock}>
+							<View style={styles.rankMainRow}>
+								<View
+									style={[
+										styles.rankDotLarge,
+										{ backgroundColor: `#${rank.rank.color.slice(0, 6)}` },
+									]}
+								/>
+								<View style={styles.rankTextCol}>
+									<ThemedText type="smallBold">
+										{rank.rank.tierShortName} · {rank.rank.rankedRating} RR
+									</ThemedText>
+									<ThemedText type="xsmall" themeColor="textSecondary">
+										{rank.rank.wins}W · {rank.rank.games} games · {rank.rank.tierName}
+									</ThemedText>
+								</View>
+								{typeof rank.latestUpdate?.rankedRatingEarned === "number" ? (
+									<View
+										style={[
+											styles.rankDeltaBadge,
+											{
+												backgroundColor:
+													rank.latestUpdate.rankedRatingEarned >= 0
+														? "rgba(106,226,175,0.14)"
+														: "rgba(226,97,106,0.14)",
+											},
+										]}
+									>
+										<ThemedText
+											type="smallBold"
+											style={{
+												color:
+													rank.latestUpdate.rankedRatingEarned >= 0
+														? StatusColors.success
+														: StatusColors.danger,
+											}}
+										>
+											{rank.latestUpdate.rankedRatingEarned >= 0 ? "+" : ""}
+											{rank.latestUpdate.rankedRatingEarned} RR
+										</ThemedText>
+									</View>
+								) : null}
+							</View>
+							{rank.fetchedAt ? (
+								<ThemedText type="xsmall" themeColor="textSecondary">
+									Updated {new Date(rank.fetchedAt).toLocaleString()}
+								</ThemedText>
+							) : null}
+						</View>
+					) : (
+						<View style={styles.rankEmpty}>
+							<ThemedText type="small" themeColor="textSecondary">
+								No competitive rank yet.
+							</ThemedText>
+							<ThemedText type="xsmall" themeColor="textSecondary">
+								Play ranked to see your RR here.
+							</ThemedText>
+						</View>
+					)}
 				</ThemedView>
 
 				<ThemedView type="backgroundElement" style={styles.section}>
-					<SectionHeader title="Recent Matches" />
-					<MatchCarousel matches={matches} loading={matchesLoading} />
+					<SectionHeader title="Progress" trailing={refreshing ? <ActivityIndicator size="small" /> : null} />
+					<InfoRow label="Level" value={snapshot ? String(snapshot.level) : "--"} />
+					<InfoRow label="XP" value={snapshot ? snapshot.xp.toLocaleString() : "--"} />
+				</ThemedView>
+
+				<ThemedView type="backgroundElement" style={styles.matchesSection}>
+					<View style={styles.sectionInnerPad}>
+						<SectionHeader title="Recent Matches" />
+					</View>
+					<MatchCarousel matches={matches} loading={matchesLoading} error={matchesError} onRetry={refreshMatches} />
 				</ThemedView>
 
 				<ThemedView type="backgroundElement" style={styles.section}>
@@ -130,24 +197,14 @@ export function AccountProfileView() {
 						favoritesCount={favoritesCount}
 						lastCheckedAt={favoriteStoreAlertsLastCheckedAt}
 					/>
-					{favoriteStoreAlertsEnabled &&
-					Platform.OS === "android" &&
-					!ignoringBatteryOptimizations ? (
-						<BatteryOptimizationCard
-							onPress={() => {
-								void requestIgnoreBatteryOptimizations();
-							}}
-						/>
+					{favoriteStoreAlertsEnabled && Platform.OS === "android" && !ignoringBatteryOptimizations ? (
+						<BatteryOptimizationCard onPress={() => void requestIgnoreBatteryOptimizations()} />
 					) : null}
 				</ThemedView>
 
 				<ThemedView type="backgroundElement" style={styles.section}>
 					<SectionHeader title="About" />
-					<VersionRow
-						currentVersion={currentVersion}
-						latestVersion={latestVersion}
-						onPressLatest={openRelease}
-					/>
+					<VersionRow currentVersion={currentVersion} latestVersion={latestVersion} onPressLatest={openRelease} />
 				</ThemedView>
 			</ScrollView>
 		</ThemedView>
@@ -192,12 +249,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 	return (
 		<ThemedView type="backgroundElement" style={styles.row}>
 			<ThemedText type="small">{label}</ThemedText>
-			<ThemedText
-				type="small"
-				themeColor="textSecondary"
-				style={styles.rowValue}
-				numberOfLines={1}
-			>
+			<ThemedText type="small" themeColor="textSecondary" style={styles.rowValue} numberOfLines={1}>
 				{value}
 			</ThemedText>
 		</ThemedView>
@@ -220,15 +272,9 @@ function AlertToggleRow({
 	const theme = useTheme();
 	const metadata = React.useMemo(() => {
 		const favoriteLabel = `${favoritesCount} Favorite${favoritesCount === 1 ? "" : "s"}`;
-		if (!enabled) {
-			return `${favoriteLabel} • Enable alerts to check in background`;
-		}
-		if (favoritesCount === 0) {
-			return `${favoriteLabel} • Add favorites to enable useful alerts`;
-		}
-		if (!lastCheckedAt) {
-			return `${favoriteLabel} • Not checked yet`;
-		}
+		if (!enabled) return `${favoriteLabel} • Enable alerts to check in background`;
+		if (favoritesCount === 0) return `${favoriteLabel} • Add favorites to enable useful alerts`;
+		if (!lastCheckedAt) return `${favoriteLabel} • Not checked yet`;
 		return `${favoriteLabel} • Last checked ${formatRelativeTime(lastCheckedAt)}`;
 	}, [enabled, favoritesCount, lastCheckedAt]);
 
@@ -264,31 +310,18 @@ function formatRelativeTime(isoDate: string): string {
 	if (hours < 24) return `${hours} h ago`;
 	const days = Math.floor(hours / 24);
 	if (days < 7) return `${days} d ago`;
-	return new Date(then).toLocaleDateString(undefined, {
-		month: "short",
-		day: "numeric",
-	});
+	return new Date(then).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 function BatteryOptimizationCard({ onPress }: { onPress: () => void }) {
 	const theme = useTheme();
 	return (
-		<ThemedView
-			type="backgroundSelected"
-			style={[styles.batteryCard, { borderColor: theme.backgroundSelected }]}
-		>
+		<ThemedView type="backgroundSelected" style={[styles.batteryCard, { borderColor: theme.backgroundSelected }]}>
 			<ThemedText type="xsmall" themeColor="textSecondary">
-				Background checks may be delayed if Android restricts Primordium in the
-				background. Allow unrestricted battery usage for more reliable alerts.
+				Background checks may be delayed if Android restricts Primordium in the background. Allow unrestricted battery
+				usage for more reliable alerts.
 			</ThemedText>
-			<Pressable
-				onPress={onPress}
-				accessibilityRole="button"
-				style={({ pressed }) => [
-					styles.batteryButton,
-					pressed && styles.pressed,
-				]}
-			>
+			<Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [styles.batteryButton, pressed && styles.pressed]}>
 				<ThemedText type="small" style={{ color: theme.primary }}>
 					Allow unrestricted battery
 				</ThemedText>
@@ -297,26 +330,11 @@ function BatteryOptimizationCard({ onPress }: { onPress: () => void }) {
 	);
 }
 
-function MenuButton({
-	label,
-	destructive,
-	onPress,
-}: {
-	label: string;
-	destructive?: boolean;
-	onPress: () => void;
-}) {
+function MenuButton({ label, destructive, onPress }: { label: string; destructive?: boolean; onPress: () => void }) {
 	const theme = useTheme();
 	return (
-		<Pressable
-			onPress={onPress}
-			accessibilityRole="button"
-			style={({ pressed }) => [styles.menuButton, pressed && styles.pressed]}
-		>
-			<ThemedText
-				type="small"
-				style={destructive ? { color: theme.primary } : undefined}
-			>
+		<Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [styles.menuButton, pressed && styles.pressed]}>
+			<ThemedText type="small" style={destructive ? { color: theme.primary } : undefined}>
 				{label}
 			</ThemedText>
 		</Pressable>
@@ -326,10 +344,14 @@ function MenuButton({
 const styles = StyleSheet.create({
 	screen: {
 		flex: 1,
-		alignItems: "center",
+	},
+	scroll: {
+		flex: 1,
+		width: "100%",
 	},
 	centered: {
 		flex: 1,
+		width: "100%",
 		alignItems: "center",
 		justifyContent: "center",
 		padding: Spacing.four,
@@ -341,11 +363,50 @@ const styles = StyleSheet.create({
 		alignSelf: "center",
 		padding: Spacing.four,
 		gap: Spacing.three,
+		paddingBottom: Spacing.six,
 	},
 	section: {
 		borderRadius: Radius.small,
 		padding: Spacing.three,
 		gap: Spacing.two,
+	},
+	matchesSection: {
+		borderRadius: Radius.small,
+		paddingVertical: Spacing.three,
+		gap: Spacing.two,
+		overflow: "hidden",
+	},
+	sectionInnerPad: {
+		paddingHorizontal: Spacing.three,
+	},
+	rankBlock: {
+		gap: Spacing.two,
+	},
+	rankMainRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: Spacing.two,
+	},
+	rankDotLarge: {
+		width: 10,
+		height: 10,
+		borderRadius: 5,
+	},
+	rankTextCol: {
+		flex: 1,
+		gap: 2,
+	},
+	rankDeltaBadge: {
+		paddingHorizontal: 8,
+		paddingVertical: 4,
+		borderRadius: 99,
+	},
+	rankError: {
+		paddingVertical: Spacing.one,
+	},
+	rankEmpty: {
+		gap: Spacing.one,
+		paddingVertical: Spacing.one,
 	},
 	row: {
 		flexDirection: "row",

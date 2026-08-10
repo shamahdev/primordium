@@ -67,7 +67,6 @@ export function useAccountProfileViewModel() {
 		try {
 			const snapshot = await AccountService.fetchProfile(currentAccount);
 			setProfileSnapshot(currentAccount.id, snapshot);
-			setRefreshing(false);
 		} catch (refreshError) {
 			const recoveryAction = AccountService.getStoredRiotSessionRecoveryAction({
 				error: refreshError,
@@ -81,9 +80,12 @@ export function useAccountProfileViewModel() {
 			} else {
 				setError(recoveryAction.message);
 			}
+		} finally {
 			setRefreshing(false);
 		}
-	}, [accounts.length, activeAccountId, setProfileSnapshot]);
+		// also refresh rank & matches – non-blocking for profile snapshot error
+		void companion.refreshAll().catch(() => {});
+	}, [accounts.length, activeAccountId, companion, setProfileSnapshot]);
 
 	useFocusEffect(
 		React.useCallback(() => {
@@ -205,14 +207,19 @@ export function useAccountProfileViewModel() {
 			latestVersion: null,
 			currentVersion: "0.0.0",
 			rank: null,
+			rankLoading: false,
+			rankError: null,
 			matches: [],
 			matchesLoading: false,
+			matchesError: null,
 			confirmLogout: () => {},
 			reauthenticate: () => {},
 			openRelease: () => {},
 			toggleFavoriteStoreAlerts: () => {},
 			switchAccount: () => {},
 			refreshProfile: () => {},
+			refreshRank: () => {},
+			refreshMatches: () => {},
 		};
 	}
 
@@ -230,13 +237,18 @@ export function useAccountProfileViewModel() {
 		latestVersion,
 		currentVersion: Constants.expoConfig?.version ?? "0.0.0",
 		rank: companion.rank,
+		rankLoading: companion.rankLoading,
+		rankError: companion.rankError,
 		matches: companion.matches,
 		matchesLoading: companion.matchesLoading,
+		matchesError: companion.matchesError,
 		confirmLogout,
 		reauthenticate,
 		openRelease,
 		toggleFavoriteStoreAlerts,
 		switchAccount,
 		refreshProfile,
+		refreshRank: companion.refreshRank,
+		refreshMatches: companion.refreshMatches,
 	};
 }

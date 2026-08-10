@@ -1,21 +1,34 @@
 import { Image } from "expo-image";
-import { FlatList, StyleSheet, View } from "react-native";
+import {
+	ActivityIndicator,
+	FlatList,
+	Pressable,
+	StyleSheet,
+	View,
+} from "react-native";
 
 import { ThemedText } from "@/commons/components/themed-text";
 import { Radius, Spacing, StatusColors } from "@/commons/constants/theme";
 import { useTheme } from "@/commons/hooks/use-theme";
 import type { MatchCard } from "../companion-type";
 
+type MatchCarouselProps = {
+	matches: MatchCard[];
+	loading: boolean;
+	error?: string | null;
+	onRetry?: () => void;
+};
+
 export function MatchCarousel({
 	matches,
 	loading,
-}: {
-	matches: MatchCard[];
-	loading: boolean;
-}) {
+	error,
+	onRetry,
+}: MatchCarouselProps) {
 	if (loading && matches.length === 0) {
 		return (
-			<View style={styles.loadingContainer}>
+			<View style={styles.stateContainer}>
+				<ActivityIndicator size="small" />
 				<ThemedText type="small" themeColor="textSecondary">
 					Loading recent matches…
 				</ThemedText>
@@ -23,11 +36,39 @@ export function MatchCarousel({
 		);
 	}
 
+	if (error && matches.length === 0) {
+		return (
+			<View style={styles.stateContainer}>
+				<ThemedText
+					type="small"
+					themeColor="textSecondary"
+					style={styles.stateText}
+				>
+					{error}
+				</ThemedText>
+				{onRetry ? (
+					<Pressable
+						onPress={onRetry}
+						accessibilityRole="button"
+						style={({ pressed }) => [styles.retryButton, pressed && { opacity: 0.7 }]}
+					>
+						<ThemedText type="smallBold" style={{ color: "#fff" }}>
+							Retry
+						</ThemedText>
+					</Pressable>
+				) : null}
+			</View>
+		);
+	}
+
 	if (matches.length === 0) {
 		return (
-			<View style={styles.loadingContainer}>
-				<ThemedText type="small" themeColor="textSecondary">
+			<View style={styles.stateContainer}>
+				<ThemedText type="small" themeColor="textSecondary" style={styles.stateText}>
 					No recent matches found.
+				</ThemedText>
+				<ThemedText type="xsmall" themeColor="textSecondary">
+					Play a match and pull to refresh.
 				</ThemedText>
 			</View>
 		);
@@ -40,9 +81,25 @@ export function MatchCarousel({
 			keyExtractor={(item) => item.matchId}
 			showsHorizontalScrollIndicator={false}
 			contentContainerStyle={styles.carouselContent}
+			ItemSeparatorComponent={() => <View style={{ width: Spacing.three }} />}
 			renderItem={({ item }) => <MatchCardView card={item} />}
 		/>
 	);
+}
+
+function formatMatchDate(iso: string) {
+	try {
+		const d = new Date(iso);
+		const now = Date.now();
+		const diff = now - d.getTime();
+		const hours = diff / (1000 * 60 * 60);
+		if (hours < 24) {
+			return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+		}
+		return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+	} catch {
+		return "";
+	}
 }
 
 function MatchCardView({ card }: { card: MatchCard }) {
@@ -54,15 +111,35 @@ function MatchCardView({ card }: { card: MatchCard }) {
 			: card.won
 				? StatusColors.success
 				: StatusColors.danger;
+	const borderLeftColor = card.won === null ? theme.backgroundSelected : winColor;
 
 	return (
-		<View style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
+		<View
+			style={[
+				styles.card,
+				{
+					backgroundColor: theme.backgroundElement,
+					borderLeftColor,
+				},
+			]}
+		>
 			{card.mapSplash ? (
-				<Image
-					source={card.mapSplash}
-					style={styles.mapSplash}
-					contentFit="cover"
-				/>
+				<View style={styles.mapSplashWrap}>
+					<Image source={card.mapSplash} style={styles.mapSplash} contentFit="cover" />
+					<View style={styles.mapOverlay} />
+					<View style={styles.mapLabel}>
+						<ThemedText
+							type="xsmall"
+							numberOfLines={1}
+							style={styles.mapName}
+						>
+							{card.mapName.toUpperCase()}
+						</ThemedText>
+						<ThemedText type="xsmall" style={styles.mapDate}>
+							{formatMatchDate(card.gameStartTime)}
+						</ThemedText>
+					</View>
+				</View>
 			) : null}
 			<View style={styles.cardBody}>
 				<View style={styles.cardHeader}>
@@ -73,45 +150,47 @@ function MatchCardView({ card }: { card: MatchCard }) {
 					>
 						{card.queueType.toUpperCase()}
 					</ThemedText>
-					<ThemedText type="smallBold" style={{ color: winColor }}>
-						{winLabel}
-					</ThemedText>
+					<View style={[styles.winBadge, { backgroundColor: `${winColor}18` }]}>
+						<ThemedText type="xsmall" style={{ color: winColor, fontWeight: "700" }}>
+							{winLabel}
+						</ThemedText>
+					</View>
 				</View>
 				<View style={styles.agentRow}>
 					{card.agentIcon ? (
-						<Image
-							source={card.agentIcon}
-							style={styles.agentIcon}
-							contentFit="contain"
-						/>
+						<Image source={card.agentIcon} style={styles.agentIcon} contentFit="contain" />
 					) : null}
-					<ThemedText type="small" numberOfLines={1}>
+					<ThemedText type="small" numberOfLines={1} style={{ flex: 1 }}>
 						{card.agentName}
 					</ThemedText>
-				</View>
-				<View style={styles.scoreRow}>
 					<ThemedText type="smallBold">{card.teamScore}</ThemedText>
-					<ThemedText type="xsmall" themeColor="textSecondary">
-						{card.mapName}
-					</ThemedText>
 				</View>
 				<View style={styles.statRow}>
 					<ThemedText type="small" themeColor="textSecondary">
 						{card.kills}/{card.deaths}/{card.assists}
 					</ThemedText>
 					{typeof card.rankedRatingEarned === "number" ? (
-						<ThemedText
-							type="xsmall"
-							style={{
-								color:
-									card.rankedRatingEarned >= 0
-										? StatusColors.success
-										: StatusColors.danger,
-							}}
+						<View
+							style={[
+								styles.rrBadge,
+								{
+									backgroundColor:
+										card.rankedRatingEarned >= 0 ? "rgba(106,226,175,0.12)" : "rgba(226,97,106,0.12)",
+								},
+							]}
 						>
-							{card.rankedRatingEarned >= 0 ? "+" : ""}
-							{card.rankedRatingEarned} RR
-						</ThemedText>
+							<ThemedText
+								type="xsmall"
+								style={{
+									color:
+										card.rankedRatingEarned >= 0 ? StatusColors.success : StatusColors.danger,
+									fontWeight: "700",
+								}}
+							>
+								{card.rankedRatingEarned >= 0 ? "+" : ""}
+								{card.rankedRatingEarned} RR
+							</ThemedText>
+						</View>
 					) : null}
 				</View>
 			</View>
@@ -120,26 +199,68 @@ function MatchCardView({ card }: { card: MatchCard }) {
 }
 
 const styles = StyleSheet.create({
-	loadingContainer: {
-		paddingVertical: Spacing.three,
+	stateContainer: {
+		paddingVertical: Spacing.four,
+		paddingHorizontal: Spacing.three,
 		alignItems: "center",
+		justifyContent: "center",
+		gap: Spacing.two,
+	},
+	stateText: {
+		textAlign: "center",
+	},
+	retryButton: {
+		marginTop: Spacing.one,
+		paddingHorizontal: Spacing.three,
+		paddingVertical: Spacing.one,
+		borderRadius: Radius.small,
+		backgroundColor: "#E6112E",
 	},
 	carouselContent: {
-		gap: Spacing.three,
+		paddingHorizontal: Spacing.three,
 		paddingVertical: Spacing.one,
 	},
 	card: {
-		width: 200,
+		width: 188,
 		borderRadius: Radius.small,
+		overflow: "hidden",
+		borderLeftWidth: 3,
+	},
+	mapSplashWrap: {
+		width: "100%",
+		height: 72,
 		overflow: "hidden",
 	},
 	mapSplash: {
 		width: "100%",
-		height: 80,
+		height: "100%",
+	},
+	mapOverlay: {
+		...StyleSheet.absoluteFill,
+		backgroundColor: "rgba(0,0,0,0.35)",
+	},
+	mapLabel: {
+		position: "absolute",
+		bottom: 6,
+		left: 8,
+		right: 8,
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+		gap: Spacing.one,
+	},
+	mapName: {
+		color: "#fff",
+		fontWeight: "700",
+		letterSpacing: 0.8,
+		flex: 1,
+	},
+	mapDate: {
+		color: "rgba(255,255,255,0.85)",
 	},
 	cardBody: {
 		padding: Spacing.two,
-		gap: Spacing.one,
+		gap: Spacing.two,
 	},
 	cardHeader: {
 		flexDirection: "row",
@@ -147,8 +268,13 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 	},
 	queueLabel: {
-		textTransform: "uppercase",
 		letterSpacing: 1,
+		flex: 1,
+	},
+	winBadge: {
+		paddingHorizontal: 6,
+		paddingVertical: 2,
+		borderRadius: 99,
 	},
 	agentRow: {
 		flexDirection: "row",
@@ -156,17 +282,19 @@ const styles = StyleSheet.create({
 		gap: Spacing.one,
 	},
 	agentIcon: {
-		width: 20,
-		height: 20,
-	},
-	scoreRow: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
+		width: 22,
+		height: 22,
+		borderRadius: 11,
+		backgroundColor: "rgba(255,255,255,0.06)",
 	},
 	statRow: {
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "center",
+	},
+	rrBadge: {
+		paddingHorizontal: 6,
+		paddingVertical: 2,
+		borderRadius: 99,
 	},
 });

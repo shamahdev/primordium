@@ -33,6 +33,7 @@ export function AccountOnboardingView() {
 					},
 				]}
 				showsVerticalScrollIndicator={false}
+				contentInsetAdjustmentBehavior="never"
 			>
 				<ThemedView style={styles.hero}>
 					<Image
@@ -128,10 +129,11 @@ export function AccountOnboardingView() {
 const styles = StyleSheet.create({
 	screen: {
 		flex: 1,
-		alignItems: "center",
 	},
 	safeArea: {
 		flex: 1,
+		width: "100%",
+		alignSelf: "stretch",
 	},
 	content: {
 		width: "100%",
@@ -163,19 +165,24 @@ const styles = StyleSheet.create({
 		gap: Spacing.three,
 	},
 	regionGrid: {
-		flexDirection: "column",
+		flexDirection: "row",
+		flexWrap: "wrap",
 		gap: Spacing.two,
 	},
 	regionButton: {
 		minWidth: 130,
-		flex: 1,
+		flexGrow: 1,
+		flexBasis: 140,
 		borderWidth: 1,
 		borderRadius: Radius.small,
 		padding: Spacing.three,
 		gap: Spacing.one,
+		alignItems: "center",
+		justifyContent: "center",
 	},
 	switchAccount: {
 		alignItems: "center",
+		paddingVertical: Spacing.one,
 	},
 	pressed: {
 		opacity: 0.7,
