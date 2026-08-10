@@ -5,12 +5,14 @@ import {
 	BottomSheetModal,
 } from "@gorhom/bottom-sheet";
 import type React from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, useWindowDimensions, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ResetTimerLabel } from "@/commons/components/reset-timer-label";
 import { ThemedText } from "@/commons/components/themed-text";
 import { Spacing } from "@/commons/constants/theme";
 import { useTheme } from "@/commons/hooks/use-theme";
+import { getStoreGridColumnCount } from "@/modules/store/components/store-grid";
 import { StoreGridCard } from "@/modules/store/components/store-grid-card";
 import type { StoreCarouselCard } from "@/modules/store/store-type";
 
@@ -39,6 +41,9 @@ export function StoreSectionSheet({
 	ref,
 }: StoreSectionSheetProps) {
 	const theme = useTheme();
+	const insets = useSafeAreaInsets();
+	const { width: windowWidth } = useWindowDimensions();
+	const columns = getStoreGridColumnCount(windowWidth);
 
 	return (
 		<BottomSheetModal
@@ -57,14 +62,18 @@ export function StoreSectionSheet({
 			{section ? (
 				<View style={styles.header}>
 					<ThemedText type="subtitle">{section.title.toUpperCase()}</ThemedText>
-					<ResetTimerLabel expiresAt={section.expiresAt} prefix="Leave in" />
+					<ResetTimerLabel expiresAt={section.expiresAt} prefix="Leaves in" />
 				</View>
 			) : null}
 			<BottomSheetFlatList
+				key={columns}
 				data={section?.items ?? []}
 				keyExtractor={(item) => item.id}
-				numColumns={2}
-				contentContainerStyle={styles.content}
+				numColumns={columns}
+				contentContainerStyle={[
+					styles.content,
+					{ paddingBottom: insets.bottom + Spacing.four },
+				]}
 				columnWrapperStyle={styles.gridRow}
 				renderItem={({ item }) => (
 					<View style={styles.gridItem}>
@@ -85,13 +94,12 @@ const styles = StyleSheet.create({
 	content: {
 		paddingHorizontal: Spacing.four,
 		paddingTop: Spacing.two,
-		paddingBottom: Spacing.two,
 		gap: Spacing.two,
 	},
 	gridRow: {
-		justifyContent: "space-between",
+		gap: Spacing.two,
 	},
 	gridItem: {
-		width: "49%",
+		flex: 1,
 	},
 });

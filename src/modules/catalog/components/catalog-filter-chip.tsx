@@ -21,6 +21,9 @@ export const CatalogFilterChip = React.memo(function CatalogFilterChip({
 	return (
 		<Pressable
 			onPress={onPress}
+			accessibilityRole="button"
+			accessibilityLabel={label}
+			accessibilityState={{ selected }}
 			style={[
 				styles.chip,
 				{
@@ -41,6 +44,9 @@ export const CatalogFilterChip = React.memo(function CatalogFilterChip({
 
 const styles = StyleSheet.create({
 	chip: {
+		minHeight: 44,
+		alignItems: "center",
+		justifyContent: "center",
 		borderWidth: StyleSheet.hairlineWidth,
 		borderRadius: 999,
 		paddingHorizontal: Spacing.three,

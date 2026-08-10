@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PrimaryButton } from "@/commons/components/primary-button";
 import { ThemedText } from "@/commons/components/themed-text";
 import { ThemedView } from "@/commons/components/themed-view";
-import { MaxContentWidth, Spacing } from "@/commons/constants/theme";
+import { MaxContentWidth, Radius, Spacing } from "@/commons/constants/theme";
 import { useTheme } from "@/commons/hooks/use-theme";
 import { ACCOUNT_SHARDS } from "@/modules/account/account-type";
 import { useAccountOnboardingViewModel } from "@/modules/account/use-account-onboarding-view-model";
@@ -25,8 +25,13 @@ export function AccountOnboardingView() {
 		<ThemedView style={styles.screen}>
 			<ScrollView
 				style={styles.safeArea}
-				contentInsetAdjustmentBehavior="automatic"
-				contentContainerStyle={[styles.content, { paddingTop: insets.top }]}
+				contentContainerStyle={[
+					styles.content,
+					{
+						paddingTop: insets.top,
+						paddingBottom: insets.bottom + Spacing.five,
+					},
+				]}
 				showsVerticalScrollIndicator={false}
 			>
 				<ThemedView style={styles.hero}>
@@ -50,6 +55,9 @@ export function AccountOnboardingView() {
 								<Pressable
 									key={shard.id}
 									onPress={() => setSelectedShard(shard.id)}
+									accessibilityRole="button"
+									accessibilityLabel={`${shard.label} region`}
+									accessibilityState={{ selected }}
 									style={({ pressed }) => [
 										styles.regionButton,
 										{
@@ -91,6 +99,7 @@ export function AccountOnboardingView() {
 				{accounts.length > 0 && (
 					<Pressable
 						onPress={switchAccount}
+						accessibilityRole="button"
 						style={({ pressed }) => [
 							styles.switchAccount,
 							pressed && styles.pressed,
@@ -119,12 +128,15 @@ export function AccountOnboardingView() {
 const styles = StyleSheet.create({
 	screen: {
 		flex: 1,
+		alignItems: "center",
 	},
 	safeArea: {
 		flex: 1,
 	},
 	content: {
+		width: "100%",
 		maxWidth: MaxContentWidth,
+		alignSelf: "center",
 		paddingHorizontal: Spacing.four,
 		paddingVertical: Spacing.five,
 		gap: Spacing.four,
@@ -137,7 +149,7 @@ const styles = StyleSheet.create({
 	icon: {
 		width: 32,
 		height: 32,
-		borderRadius: Spacing.one,
+		borderRadius: Radius.small,
 	},
 	title: {
 		maxWidth: 620,
@@ -145,7 +157,7 @@ const styles = StyleSheet.create({
 	card: {
 		gap: Spacing.two,
 		padding: Spacing.three,
-		borderRadius: Spacing.one,
+		borderRadius: Radius.small,
 	},
 	section: {
 		gap: Spacing.three,
@@ -158,7 +170,7 @@ const styles = StyleSheet.create({
 		minWidth: 130,
 		flex: 1,
 		borderWidth: 1,
-		borderRadius: Spacing.one,
+		borderRadius: Radius.small,
 		padding: Spacing.three,
 		gap: Spacing.one,
 	},

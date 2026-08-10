@@ -15,11 +15,12 @@ import {
 	SafeAreaView,
 	useSafeAreaInsets,
 } from "react-native-safe-area-context";
-
+import { SectionHeader } from "@/commons/components/section-header";
 import { ThemedText } from "@/commons/components/themed-text";
 import { ThemedView } from "@/commons/components/themed-view";
-import { MaxContentWidth, Spacing } from "@/commons/constants/theme";
+import { MaxContentWidth, Radius, Spacing } from "@/commons/constants/theme";
 import { useTheme } from "@/commons/hooks/use-theme";
+import { FavoriteStarColor } from "@/modules/catalog/catalog-constants";
 import {
 	getCatalogRarityIcon,
 	getCatalogStoreCurrencyIcon,
@@ -48,8 +49,6 @@ type StoreItemDetailViewProps = {
 	rarity?: string;
 	source?: string;
 };
-
-const FavoriteStarColor = "#FAD663";
 
 export function StoreItemDetailView(props: StoreItemDetailViewProps) {
 	if (props.itemType === "skin") {
@@ -122,7 +121,7 @@ function SkinDetailView(props: StoreItemDetailViewProps) {
 		return (
 			<ThemedView style={styles.screen}>
 				<SafeAreaView style={styles.safeArea}>
-					<Header title={props.title} />
+					<Header />
 					<View style={styles.centered}>
 						<ThemedText themeColor="textSecondary">
 							Skin detail unavailable
@@ -142,6 +141,10 @@ function SkinDetailView(props: StoreItemDetailViewProps) {
 	}) => (
 		<Pressable
 			onPress={() => handleChromaSelect(index)}
+			hitSlop={4}
+			accessibilityRole="button"
+			accessibilityLabel={`Chroma ${index + 1}`}
+			accessibilityState={{ selected: index === selectedChromaIndex }}
 			style={[
 				styles.chromaSwatch,
 				{
@@ -167,7 +170,7 @@ function SkinDetailView(props: StoreItemDetailViewProps) {
 	return (
 		<ThemedView style={styles.screen}>
 			<SafeAreaView style={styles.safeArea}>
-				<Header title={detailModel?.title ?? props.title} />
+				<Header />
 				<ScrollView
 					contentContainerStyle={styles.contentContainer}
 					showsVerticalScrollIndicator={false}
@@ -212,13 +215,7 @@ function SkinDetailView(props: StoreItemDetailViewProps) {
 
 					{skinDetail.chromas.length > 1 && (
 						<View style={styles.section}>
-							<ThemedText
-								type="smallBold"
-								themeColor="textSecondary"
-								style={styles.sectionLabel}
-							>
-								CHROMAS
-							</ThemedText>
+							<SectionHeader title="Chromas" />
 							<FlatList
 								horizontal
 								data={skinDetail.chromas}
@@ -232,13 +229,7 @@ function SkinDetailView(props: StoreItemDetailViewProps) {
 
 					{skinDetail.levels.length > 1 && (
 						<View style={styles.section}>
-							<ThemedText
-								type="smallBold"
-								themeColor="textSecondary"
-								style={styles.sectionLabel}
-							>
-								LEVELS
-							</ThemedText>
+							<SectionHeader title="Levels" />
 							<View style={styles.levelsList}>
 								{skinDetail.levels.map((level, index) => (
 									<LevelRow
@@ -284,7 +275,7 @@ function SimpleDetailView(props: StoreItemDetailViewProps) {
 	return (
 		<ThemedView style={styles.screen}>
 			<SafeAreaView style={styles.safeArea}>
-				<Header title={title} />
+				<Header />
 				<ScrollView
 					contentContainerStyle={styles.contentContainer}
 					showsVerticalScrollIndicator={false}
@@ -406,7 +397,7 @@ function CardArtGrid({
 	);
 }
 
-function Header({ title }: { title: string }) {
+function Header() {
 	const theme = useTheme();
 
 	return (
@@ -416,10 +407,10 @@ function Header({ title }: { title: string }) {
 				onPress={() => router.back()}
 				hitSlop={12}
 				style={styles.closeButton}
+				accessibilityRole="button"
+				accessibilityLabel="Close"
 			>
-				<ThemedText type="default" style={{ color: theme.text, fontSize: 20 }}>
-					✕
-				</ThemedText>
+				<Ionicons name="close" size={22} color={theme.text} />
 			</Pressable>
 		</View>
 	);
@@ -548,12 +539,11 @@ function LevelRow({
 				]}
 			>
 				{hasVideo ? (
-					<ThemedText
-						type="smallBold"
-						style={{ color: isActive ? theme.primaryForeground : theme.text }}
-					>
-						▶
-					</ThemedText>
+					<Ionicons
+						name="play"
+						size={14}
+						color={isActive ? theme.primaryForeground : theme.text}
+					/>
 				) : null}
 			</View>
 			<View style={styles.levelInfo}>
@@ -609,14 +599,23 @@ function SkinVideoPlayer({
 	});
 
 	return (
-		<Pressable onLongPress={onDismiss} style={styles.videoContainer}>
+		<View style={styles.videoContainer}>
 			<VideoView
 				player={player}
 				style={styles.heroImage}
 				contentFit="contain"
 				nativeControls={false}
 			/>
-		</Pressable>
+			<Pressable
+				onPress={onDismiss}
+				hitSlop={8}
+				style={styles.videoCloseButton}
+				accessibilityRole="button"
+				accessibilityLabel="Close video"
+			>
+				<Ionicons name="close" size={18} color="#ffffff" />
+			</Pressable>
+		</View>
 	);
 }
 
@@ -659,12 +658,6 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	headerButton: {
-		width: 32,
-		height: 32,
-		alignItems: "center",
-		justifyContent: "center",
-	},
 	contentContainer: {
 		padding: Spacing.four,
 		gap: Spacing.four,
@@ -681,13 +674,24 @@ const styles = StyleSheet.create({
 		height: "100%",
 	},
 	heroFallback: {
-		borderRadius: Spacing.three,
+		borderRadius: Radius.large,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	videoContainer: {
 		width: "100%",
 		height: "100%",
+	},
+	videoCloseButton: {
+		position: "absolute",
+		top: Spacing.two,
+		right: Spacing.two,
+		width: 32,
+		height: 32,
+		borderRadius: Radius.large,
+		alignItems: "center",
+		justifyContent: "center",
+		backgroundColor: "rgba(0, 0, 0, 0.6)",
 	},
 	titleRow: {
 		flexDirection: "row",
@@ -745,7 +749,7 @@ const styles = StyleSheet.create({
 		gap: Spacing.three,
 		paddingHorizontal: Spacing.three,
 		paddingVertical: Spacing.two,
-		borderRadius: Spacing.three,
+		borderRadius: Radius.large,
 	},
 	levelInfo: {
 		flex: 1,
@@ -754,7 +758,7 @@ const styles = StyleSheet.create({
 	playButton: {
 		width: 32,
 		height: 32,
-		borderRadius: 16,
+		borderRadius: Radius.large,
 		alignItems: "center",
 		justifyContent: "center",
 	},
@@ -770,14 +774,14 @@ const styles = StyleSheet.create({
 	},
 	cardGridCell: {
 		flex: 1,
-		borderRadius: Spacing.three,
+		borderRadius: Radius.large,
 		overflow: "hidden",
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	cardGridLargeCell: {
 		flex: 1,
-		borderRadius: Spacing.three,
+		borderRadius: Radius.large,
 		overflow: "hidden",
 		alignItems: "center",
 		justifyContent: "center",
@@ -787,7 +791,7 @@ const styles = StyleSheet.create({
 		height: "100%",
 	},
 	titlePreview: {
-		borderRadius: Spacing.three,
+		borderRadius: Radius.large,
 		gap: Spacing.two,
 	},
 	titlePreviewText: {

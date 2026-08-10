@@ -193,6 +193,7 @@ async function buildNightMarketCard(
 		id: "night-market",
 		title: "Night Market",
 		subtitle: `${items.length} offer${items.length === 1 ? "" : "s"}`,
+		imageUrl: require("@/assets/images/valorant/placeholder/night-market.png"),
 		section: "nightMarket" as const,
 		expiresAt: getExpiresAt(bonusStore.BonusStoreRemainingDurationInSeconds),
 		items,

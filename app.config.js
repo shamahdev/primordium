@@ -17,7 +17,13 @@ export default ({ config }) => ({
 			},
 		],
 		"expo-background-task",
-		"expo-notifications",
+		[
+			"expo-notifications",
+			{
+				icon: "./assets/images/monochrome-icon.png",
+				color: "#E6112E",
+			},
+		],
 	],
 	ios: {
 		...config.ios,

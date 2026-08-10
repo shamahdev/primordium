@@ -7,7 +7,7 @@ import {
 } from "react-native";
 
 import { ThemedText } from "@/commons/components/themed-text";
-import { Spacing } from "@/commons/constants/theme";
+import { Radius, Spacing } from "@/commons/constants/theme";
 import { useTheme } from "@/commons/hooks/use-theme";
 
 type PrimaryButtonProps = Omit<PressableProps, "style"> & {
@@ -46,7 +46,7 @@ export function PrimaryButton({
 const styles = StyleSheet.create({
 	button: {
 		minHeight: 44,
-		borderRadius: Spacing.one,
+		borderRadius: Radius.small,
 		paddingHorizontal: Spacing.three,
 		alignItems: "center",
 		justifyContent: "center",

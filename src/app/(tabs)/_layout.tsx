@@ -12,9 +12,7 @@ import type {
 import React from "react";
 import {
 	InteractionManager,
-	Platform,
 	StyleSheet,
-	useColorScheme,
 	useWindowDimensions,
 } from "react-native";
 import {
@@ -37,8 +35,7 @@ const MaterialTopTabs = withLayoutContext<
 >(Navigator);
 
 export default function AuthenticatedTabsLayout() {
-	const scheme = useColorScheme();
-	const colors = Colors[scheme === "unspecified" ? "dark" : scheme];
+	const colors = Colors.dark;
 	const layout = useWindowDimensions();
 	const insets = useSafeAreaInsets();
 	const { showBanner, latestVersion, releaseUrl, dismissBanner } =
@@ -89,7 +86,7 @@ export default function AuthenticatedTabsLayout() {
 						height: 0,
 					},
 					tabBarStyle: {
-						paddingBottom: Platform.OS === "android" ? insets.bottom : 0,
+						paddingBottom: insets.bottom,
 					},
 					tabBarItemStyle: styles.item,
 					tabBarLabelStyle: styles.label,

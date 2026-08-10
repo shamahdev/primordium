@@ -6,7 +6,7 @@
 		"orientation": "portrait",
 		"icon": "./assets/images/icon.png",
 		"scheme": "primordium",
-		"userInterfaceStyle": "automatic",
+		"userInterfaceStyle": "dark",
 		"android": {
 			"adaptiveIcon": {
 				"foregroundImage": "./assets/images/adaptive-icon.png",

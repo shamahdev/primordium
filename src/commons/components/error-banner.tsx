@@ -38,6 +38,7 @@ export function ErrorBanner({
 			<Pressable
 				style={[styles.banner, { backgroundColor: theme.primary }]}
 				onPress={onPress}
+				accessibilityRole="button"
 			>
 				{content}
 			</Pressable>

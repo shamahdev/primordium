@@ -4,18 +4,20 @@ import {
 	ScrollView,
 	StyleSheet,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ErrorBanner } from "@/commons/components/error-banner";
 import { PrimaryButton } from "@/commons/components/primary-button";
 import { ThemedText } from "@/commons/components/themed-text";
 import { ThemedView } from "@/commons/components/themed-view";
-import { MaxContentWidth, Spacing } from "@/commons/constants/theme";
+import { MaxContentWidth, Radius, Spacing } from "@/commons/constants/theme";
 import { useTheme } from "@/commons/hooks/use-theme";
 import { getAccountLabel } from "@/modules/account/account-type";
 import { useAccountSwitchViewModel } from "@/modules/account/use-account-switch-view-model";
 
 export function AccountSwitchView() {
 	const theme = useTheme();
+	const insets = useSafeAreaInsets();
 	const {
 		accounts,
 		activeAccountId,
@@ -43,9 +45,14 @@ export function AccountSwitchView() {
 			{error && <ErrorBanner message={error} />}
 
 			<ScrollView
-				contentContainerStyle={styles.content}
+				contentContainerStyle={[
+					styles.content,
+					{
+						paddingTop: insets.top + Spacing.four,
+						paddingBottom: insets.bottom + Spacing.four,
+					},
+				]}
 				showsVerticalScrollIndicator={false}
-				contentInsetAdjustmentBehavior="automatic"
 			>
 				<ThemedView style={styles.header}>
 					<ThemedText type="title">Switch Account</ThemedText>
@@ -63,6 +70,12 @@ export function AccountSwitchView() {
 								key={account.id}
 								disabled={!!busyAccountId}
 								onPress={() => void chooseAccount(account.id)}
+								accessibilityRole="button"
+								accessibilityLabel={`${getAccountLabel(account)}, ${account.shard.toUpperCase()}, ${account.status === "needsReauth" ? "Sign in required" : "Ready"}`}
+								accessibilityState={{
+									selected: active,
+									disabled: !!busyAccountId,
+								}}
 								style={({ pressed }) => [
 									styles.accountRow,
 									{
@@ -114,6 +127,7 @@ export function AccountSwitchView() {
 				<PrimaryButton label="Add account" onPress={addAccount} />
 				<Pressable
 					onPress={cancel}
+					accessibilityRole="button"
 					style={({ pressed }) => [styles.cancel, pressed && styles.pressed]}
 				>
 					<ThemedText type="small" themeColor="textSecondary">
@@ -131,9 +145,11 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 	},
 	content: {
+		width: "100%",
+		maxWidth: MaxContentWidth,
+		alignSelf: "center",
 		padding: Spacing.four,
 		gap: Spacing.three,
-		maxWidth: MaxContentWidth,
 	},
 	header: {
 		gap: Spacing.two,
@@ -146,7 +162,7 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: Spacing.three,
-		borderRadius: Spacing.three,
+		borderRadius: Radius.large,
 		padding: Spacing.three,
 	},
 	accountAvatar: {

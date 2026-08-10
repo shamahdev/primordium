@@ -56,6 +56,8 @@ export function StoreGridCardPressable({
 		<Pressable
 			onPress={handlePress}
 			style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+			accessibilityRole="button"
+			accessibilityLabel={`${item.title}, ${item.price.amount.toLocaleString()}`}
 		>
 			{card}
 		</Pressable>

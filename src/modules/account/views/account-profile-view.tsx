@@ -4,21 +4,25 @@ import {
 	ActivityIndicator,
 	Platform,
 	Pressable,
+	RefreshControl,
 	ScrollView,
 	StyleSheet,
 	Switch,
+	View,
 } from "react-native";
 
 import { ErrorBanner } from "@/commons/components/error-banner";
+import { SectionHeader } from "@/commons/components/section-header";
 import { ThemedText } from "@/commons/components/themed-text";
 import { ThemedView } from "@/commons/components/themed-view";
-import { MaxContentWidth, Spacing } from "@/commons/constants/theme";
+import { MaxContentWidth, Radius, Spacing } from "@/commons/constants/theme";
 import { useTheme } from "@/commons/hooks/use-theme";
 import { useAccountProfileViewModel } from "@/modules/account/use-account-profile-view-model";
 import { MatchCarousel } from "@/modules/companion/components/match-carousel";
 import { requestIgnoreBatteryOptimizations } from "@/modules/favorite/adapters/favorite-battery-optimization.adapter";
 
 export function AccountProfileView() {
+	const theme = useTheme();
 	const {
 		redirect,
 		account,
@@ -50,6 +54,17 @@ export function AccountProfileView() {
 		return null;
 	}
 
+	if (!snapshot && refreshing) {
+		return (
+			<ThemedView style={styles.screen}>
+				<View style={styles.centered}>
+					<ActivityIndicator />
+					<ThemedText themeColor="textSecondary">Loading profile...</ThemedText>
+				</View>
+			</ThemedView>
+		);
+	}
+
 	return (
 		<ThemedView style={styles.screen}>
 			{account.status === "needsReauth" && (
@@ -72,18 +87,19 @@ export function AccountProfileView() {
 				contentContainerStyle={styles.content}
 				showsVerticalScrollIndicator={false}
 				contentInsetAdjustmentBehavior="automatic"
+				refreshControl={
+					<RefreshControl
+						refreshing={refreshing}
+						onRefresh={refreshProfile}
+						tintColor={theme.primary}
+					/>
+				}
 			>
 				<ThemedView type="backgroundElement" style={styles.section}>
-					<ThemedView type="backgroundElement" style={styles.sectionHeader}>
-						<ThemedText
-							type="small"
-							themeColor="textSecondary"
-							style={styles.sectionTitle}
-						>
-							PROGRESS
-						</ThemedText>
-						{refreshing && <ActivityIndicator />}
-					</ThemedView>
+					<SectionHeader
+						title="Progress"
+						trailing={refreshing ? <ActivityIndicator /> : null}
+					/>
 					<InfoRow
 						label="Level"
 						value={snapshot ? String(snapshot.level) : "--"}
@@ -95,36 +111,18 @@ export function AccountProfileView() {
 				</ThemedView>
 
 				<ThemedView type="backgroundElement" style={styles.section}>
-					<ThemedText
-						type="small"
-						themeColor="textSecondary"
-						style={styles.sectionTitle}
-					>
-						RECENT MATCHES
-					</ThemedText>
+					<SectionHeader title="Recent Matches" />
 					<MatchCarousel matches={matches} loading={matchesLoading} />
 				</ThemedView>
 
 				<ThemedView type="backgroundElement" style={styles.section}>
-					<ThemedText
-						type="small"
-						themeColor="textSecondary"
-						style={styles.sectionTitle}
-					>
-						ACCOUNT
-					</ThemedText>
+					<SectionHeader title="Account" />
 					<MenuButton label="Switch Account" onPress={switchAccount} />
 					<MenuButton label="Logout" destructive onPress={confirmLogout} />
 				</ThemedView>
 
 				<ThemedView type="backgroundElement" style={styles.section}>
-					<ThemedText
-						type="small"
-						themeColor="textSecondary"
-						style={styles.sectionTitle}
-					>
-						NOTIFICATIONS
-					</ThemedText>
+					<SectionHeader title="Notifications" />
 					<AlertToggleRow
 						enabled={favoriteStoreAlertsEnabled}
 						disabled={updatingAlerts}
@@ -144,13 +142,7 @@ export function AccountProfileView() {
 				</ThemedView>
 
 				<ThemedView type="backgroundElement" style={styles.section}>
-					<ThemedText
-						type="small"
-						themeColor="textSecondary"
-						style={styles.sectionTitle}
-					>
-						ABOUT
-					</ThemedText>
+					<SectionHeader title="About" />
 					<VersionRow
 						currentVersion={currentVersion}
 						latestVersion={latestVersion}
@@ -180,9 +172,14 @@ function VersionRow({
 					v{currentVersion}
 				</ThemedText>
 				{latestVersion ? (
-					<Pressable onPress={onPressLatest} hitSlop={8}>
+					<Pressable
+						onPress={onPressLatest}
+						hitSlop={8}
+						accessibilityRole="button"
+						accessibilityLabel={`Update available, version ${latestVersion}`}
+					>
 						<ThemedText type="small" style={{ color: theme.primary }}>
-							{`(v${latestVersion} Available)`}
+							{`(v${latestVersion} available)`}
 						</ThemedText>
 					</Pressable>
 				) : null}
@@ -247,6 +244,7 @@ function AlertToggleRow({
 				value={enabled}
 				disabled={disabled}
 				onValueChange={(value) => void onValueChange(value)}
+				accessibilityLabel="Favorite store alerts"
 				trackColor={{ false: theme.backgroundSelected, true: theme.primary }}
 				thumbColor={theme.primaryForeground}
 			/>
@@ -285,6 +283,7 @@ function BatteryOptimizationCard({ onPress }: { onPress: () => void }) {
 			</ThemedText>
 			<Pressable
 				onPress={onPress}
+				accessibilityRole="button"
 				style={({ pressed }) => [
 					styles.batteryButton,
 					pressed && styles.pressed,
@@ -311,6 +310,7 @@ function MenuButton({
 	return (
 		<Pressable
 			onPress={onPress}
+			accessibilityRole="button"
 			style={({ pressed }) => [styles.menuButton, pressed && styles.pressed]}
 		>
 			<ThemedText
@@ -326,24 +326,26 @@ function MenuButton({
 const styles = StyleSheet.create({
 	screen: {
 		flex: 1,
+		alignItems: "center",
 	},
-	content: {
+	centered: {
+		flex: 1,
+		alignItems: "center",
+		justifyContent: "center",
 		padding: Spacing.four,
 		gap: Spacing.three,
+	},
+	content: {
+		width: "100%",
 		maxWidth: MaxContentWidth,
+		alignSelf: "center",
+		padding: Spacing.four,
+		gap: Spacing.three,
 	},
 	section: {
-		borderRadius: Spacing.one,
+		borderRadius: Radius.small,
 		padding: Spacing.three,
 		gap: Spacing.two,
-	},
-	sectionHeader: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-	},
-	sectionTitle: {
-		letterSpacing: 1.4,
 	},
 	row: {
 		flexDirection: "row",
@@ -367,7 +369,7 @@ const styles = StyleSheet.create({
 	},
 	batteryCard: {
 		borderWidth: StyleSheet.hairlineWidth,
-		borderRadius: Spacing.one,
+		borderRadius: Radius.small,
 		padding: Spacing.three,
 		gap: Spacing.two,
 	},

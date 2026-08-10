@@ -1,23 +1,18 @@
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import * as Notifications from "expo-notifications";
 import { router, Stack } from "expo-router";
-import {
-	DarkTheme,
-	DefaultTheme,
-	ThemeProvider,
-} from "expo-router/react-navigation";
+import { DarkTheme, ThemeProvider } from "expo-router/react-navigation";
+import { StatusBar } from "expo-status-bar";
 import React from "react";
-import { useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { AccountSessionRefreshWebView } from "@/modules/account/components/account-session-refresh-webview";
 import { FavoriteAlertRuntime } from "@/modules/favorite/components/favorite-alert-runtime";
 
 export default function RootLayout() {
-	const colorScheme = useColorScheme();
 	return (
 		<GestureHandlerRootView style={{ flex: 1 }}>
-			<ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+			<ThemeProvider value={DarkTheme}>
 				<BottomSheetModalProvider>
 					<AccountSessionRefreshWebView />
 					<FavoriteAlertRuntime />
@@ -33,6 +28,7 @@ export default function RootLayout() {
 						/>
 						<Stack.Screen name="(tabs)" />
 					</Stack>
+					<StatusBar style="light" />
 				</BottomSheetModalProvider>
 			</ThemeProvider>
 		</GestureHandlerRootView>

@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/commons/components/themed-text";
 import { ThemedView } from "@/commons/components/themed-view";
-import { OwnedAccent, Spacing } from "@/commons/constants/theme";
+import { OwnedAccent, Radius, Spacing } from "@/commons/constants/theme";
 import { useTheme } from "@/commons/hooks/use-theme";
 import { FavoriteStarColor } from "../catalog-constants";
 import {
@@ -46,6 +46,8 @@ export const CatalogRow = React.memo(function CatalogRow({
 	return (
 		<Pressable
 			onPress={openItem}
+			accessibilityRole="button"
+			accessibilityLabel={item.title}
 			style={({ pressed }) => [styles.row, pressed && styles.pressed]}
 		>
 			{isOwned ? <View style={styles.ownedStripe} /> : null}
@@ -87,7 +89,7 @@ export const CatalogRow = React.memo(function CatalogRow({
 			{isFavorite ? (
 				<Ionicons name="star" size={16} color={FavoriteStarColor} />
 			) : null}
-			<ThemedText style={{ color: theme.textSecondary }}>{">"}</ThemedText>
+			<Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
 		</Pressable>
 	);
 });
@@ -114,7 +116,7 @@ const styles = StyleSheet.create({
 	thumbnail: {
 		width: 56,
 		height: 56,
-		borderRadius: Spacing.one,
+		borderRadius: Radius.small,
 		alignItems: "center",
 		justifyContent: "center",
 		overflow: "hidden",

@@ -13,16 +13,8 @@ import { ErrorBanner } from "@/commons/components/error-banner";
 import { PrimaryButton } from "@/commons/components/primary-button";
 import { ThemedText } from "@/commons/components/themed-text";
 import { ThemedView } from "@/commons/components/themed-view";
-import { Spacing } from "@/commons/constants/theme";
+import { MaxContentWidth, Radius, Spacing } from "@/commons/constants/theme";
 import { useTheme } from "@/commons/hooks/use-theme";
-import {
-	ALL_RARITIES_LABEL,
-	CATALOG_TYPE_ORDER,
-	FILTER_LABELS,
-	RARITY_LABELS,
-	RARITY_ORDER,
-} from "../catalog-constants";
-import { getCatalogRarityColor } from "../catalog-presentation";
 import type {
 	CatalogItemType,
 	CatalogListItem,
@@ -30,8 +22,8 @@ import type {
 	CatalogRenderItem,
 	CatalogSection,
 } from "../catalog-type";
-import { CatalogFavoriteToggleFab } from "../components/catalog-favorite-toggle-fab";
-import { CatalogFilterChip } from "../components/catalog-filter-chip";
+import { CatalogFilterPanel } from "../components/catalog-filter-panel";
+import { CatalogFilterToolbar } from "../components/catalog-filter-toolbar";
 import { CatalogRow } from "../components/catalog-row";
 import { CatalogSectionHeader } from "../components/catalog-section-header";
 import type { OwnedStatus } from "../use-catalog-view-model";
@@ -82,6 +74,7 @@ export function CatalogView({
 	handleSetOwnedStatus,
 }: CatalogViewProps) {
 	const theme = useTheme();
+	const [filtersExpanded, setFiltersExpanded] = React.useState(false);
 
 	const flatData = React.useMemo<CatalogRenderItem[]>(() => {
 		const rows: CatalogRenderItem[] = [];
@@ -152,6 +145,7 @@ export function CatalogView({
 								placeholderTextColor={theme.textSecondary}
 								autoCapitalize="none"
 								autoCorrect={false}
+								accessibilityLabel="Search catalog"
 								style={[
 									styles.searchInput,
 									{
@@ -164,6 +158,9 @@ export function CatalogView({
 							{search.length > 0 ? (
 								<Pressable
 									onPress={() => handleSearchChange("")}
+									hitSlop={8}
+									accessibilityRole="button"
+									accessibilityLabel="Clear search"
 									style={styles.searchClear}
 								>
 									<Ionicons
@@ -174,59 +171,31 @@ export function CatalogView({
 								</Pressable>
 							) : null}
 						</View>
-						<View style={styles.chipRow}>
-							<CatalogFilterChip
-								label={FILTER_LABELS.all}
-								selected={typeFilter.length === 0}
-								onPress={handleClearTypes}
+						<CatalogFilterToolbar
+							expanded={filtersExpanded}
+							typeFilter={typeFilter}
+							rarityFilter={rarityFilter}
+							ownedStatus={ownedStatus}
+							favoritesOnly={favoritesOnly}
+							resultCount={resultCount}
+							showResultCount={!loading && !error}
+							onToggleExpanded={() =>
+								setFiltersExpanded((expanded) => !expanded)
+							}
+						/>
+						{filtersExpanded ? (
+							<CatalogFilterPanel
+								typeFilter={typeFilter}
+								rarityFilter={rarityFilter}
+								ownedStatus={ownedStatus}
+								favoritesOnly={favoritesOnly}
+								handleToggleType={handleToggleType}
+								handleClearTypes={handleClearTypes}
+								handleToggleRarity={handleToggleRarity}
+								handleClearRarities={handleClearRarities}
+								handleSetOwnedStatus={handleSetOwnedStatus}
+								handleToggleFavoritesOnly={handleToggleFavoritesOnly}
 							/>
-							{CATALOG_TYPE_ORDER.map((type) => (
-								<CatalogFilterChip
-									key={type}
-									label={FILTER_LABELS[type]}
-									selected={typeFilter.includes(type)}
-									onPress={() => handleToggleType(type)}
-								/>
-							))}
-						</View>
-						<View style={styles.chipRow}>
-							<CatalogFilterChip
-								label={ALL_RARITIES_LABEL}
-								selected={rarityFilter.length === 0}
-								onPress={handleClearRarities}
-							/>
-							{RARITY_ORDER.map((rarity) => (
-								<CatalogFilterChip
-									key={rarity}
-									label={RARITY_LABELS[rarity]}
-									selected={rarityFilter.includes(rarity)}
-									color={getCatalogRarityColor(rarity)}
-									onPress={() => handleToggleRarity(rarity)}
-								/>
-							))}
-						</View>
-						<View style={styles.chipRow}>
-							<CatalogFilterChip
-								label="All"
-								selected={ownedStatus === "all"}
-								onPress={() => handleSetOwnedStatus("all")}
-							/>
-							<CatalogFilterChip
-								label="Owned"
-								selected={ownedStatus === "owned"}
-								onPress={() => handleSetOwnedStatus("owned")}
-							/>
-							<CatalogFilterChip
-								label="Not owned"
-								selected={ownedStatus === "notOwned"}
-								onPress={() => handleSetOwnedStatus("notOwned")}
-							/>
-						</View>
-						{!loading && !error ? (
-							<ThemedText type="xsmall" themeColor="textSecondary">
-								{resultCount.toLocaleString()}{" "}
-								{favoritesOnly ? "favorites" : "items"}
-							</ThemedText>
 						) : null}
 					</View>
 				}
@@ -278,10 +247,6 @@ export function CatalogView({
 				showsVerticalScrollIndicator={false}
 				contentInsetAdjustmentBehavior="automatic"
 			/>
-			<CatalogFavoriteToggleFab
-				active={favoritesOnly}
-				onPress={handleToggleFavoritesOnly}
-			/>
 		</ThemedView>
 	);
 }
@@ -293,8 +258,9 @@ const styles = StyleSheet.create({
 	},
 	content: {
 		padding: Spacing.four,
-		paddingBottom: 96,
+		paddingBottom: Spacing.four,
 		gap: Spacing.two,
+		maxWidth: MaxContentWidth,
 	},
 	headerContent: {
 		gap: Spacing.three,
@@ -307,19 +273,15 @@ const styles = StyleSheet.create({
 	searchInput: {
 		flex: 1,
 		borderWidth: StyleSheet.hairlineWidth,
-		borderRadius: Spacing.one,
+		borderRadius: Radius.small,
 		paddingHorizontal: Spacing.three,
+		paddingRight: Spacing.five,
 		paddingVertical: Spacing.two,
 		fontSize: 16,
 	},
 	searchClear: {
 		position: "absolute",
 		right: Spacing.two,
-	},
-	chipRow: {
-		flexDirection: "row",
-		flexWrap: "wrap",
-		gap: Spacing.two,
 	},
 	sectionHeader: {
 		letterSpacing: 1.4,

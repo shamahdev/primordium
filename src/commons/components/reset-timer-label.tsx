@@ -4,6 +4,7 @@ import { View } from "react-native";
 
 import { ThemedText } from "@/commons/components/themed-text";
 import { Spacing } from "@/commons/constants/theme";
+import { useTheme } from "@/commons/hooks/use-theme";
 
 type ResetTimerLabelProps = {
 	expiresAt: string;
@@ -14,6 +15,7 @@ export function ResetTimerLabel({
 	expiresAt,
 	prefix = "Reset in",
 }: ResetTimerLabelProps) {
+	const theme = useTheme();
 	const [now, setNow] = React.useState(() => Date.now());
 
 	React.useEffect(() => {
@@ -25,7 +27,7 @@ export function ResetTimerLabel({
 		<View
 			style={{ flexDirection: "row", alignItems: "center", gap: Spacing.half }}
 		>
-			<Ionicons name="time-outline" size={12} color="#888888" />
+			<Ionicons name="time-outline" size={12} color={theme.textSecondary} />
 			<ThemedText type="xsmall" themeColor="textSecondary">
 				{prefix} {formatRemaining(expiresAt, now)}
 			</ThemedText>

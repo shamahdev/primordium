@@ -5,7 +5,7 @@ import { WebView } from "react-native-webview";
 import { PrimaryButton } from "@/commons/components/primary-button";
 import { ThemedText } from "@/commons/components/themed-text";
 import { ThemedView } from "@/commons/components/themed-view";
-import { Spacing } from "@/commons/constants/theme";
+import { Radius, Spacing } from "@/commons/constants/theme";
 import { ACCOUNT_RIOT_LOGIN_URL } from "@/modules/account/account-constants";
 import { AccountService } from "@/modules/account/account-service";
 import type {
@@ -181,13 +181,13 @@ const styles = StyleSheet.create({
 		flex: 1,
 		alignItems: "center",
 		justifyContent: "center",
-		borderRadius: Spacing.one,
+		borderRadius: Radius.small,
 		gap: Spacing.two,
 	},
 	webViewShell: {
 		flex: 1,
 		overflow: "hidden",
-		borderRadius: Spacing.one,
+		borderRadius: Radius.small,
 	},
 	webView: {
 		flex: 1,
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
 	errorCard: {
 		padding: Spacing.three,
 		gap: Spacing.two,
-		borderRadius: Spacing.one,
+		borderRadius: Radius.small,
 	},
 	cancel: {
 		alignItems: "center",

@@ -1,10 +1,16 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/commons/components/themed-text";
 import { ThemedView } from "@/commons/components/themed-view";
-import { Colors, MaxContentWidth, Spacing } from "@/commons/constants/theme";
+import {
+	Colors,
+	MaxContentWidth,
+	Spacing,
+	StatusColors,
+} from "@/commons/constants/theme";
 import { useAccountStore } from "@/modules/account/account-store";
 import { getAccountLabel } from "@/modules/account/account-type";
 
@@ -25,22 +31,32 @@ export function AccountTopHeader() {
 			<View style={styles.inner}>
 				<Pressable
 					onPress={() => router.push("/switch-account")}
+					accessibilityRole="button"
+					accessibilityLabel={`Switch account. Current account: ${getAccountLabel(account)}`}
+					accessibilityHint="Opens the account switcher"
 					style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
 				>
-					<View style={styles.identity}>
-						<ThemedText
-							type="smallBold"
-							numberOfLines={1}
-							style={{ color: Colors.dark.text }}
-						>
-							{getAccountLabel(account)}
-						</ThemedText>
-						{rank ? (
-							<RankPill
-								rank={rank}
-								update={account.rankSnapshot?.latestUpdate ?? null}
-							/>
-						) : null}
+					<View style={styles.identityRow}>
+						<View style={styles.identity}>
+							<ThemedText
+								type="smallBold"
+								numberOfLines={1}
+								style={{ color: Colors.dark.text }}
+							>
+								{getAccountLabel(account)}
+							</ThemedText>
+							{rank ? (
+								<RankPill
+									rank={rank}
+									update={account.rankSnapshot?.latestUpdate ?? null}
+								/>
+							) : null}
+						</View>
+						<Ionicons
+							name="chevron-forward"
+							size={14}
+							color={Colors.dark.textSecondary}
+						/>
 					</View>
 				</Pressable>
 				<View style={styles.balances}>
@@ -71,8 +87,8 @@ function RankPill({
 }) {
 	const delta = update?.rankedRatingEarned;
 	const hasDelta = typeof delta === "number";
-	const deltaArrow =
-		hasDelta && delta !== undefined ? (delta >= 0 ? "↑" : "↓") : null;
+	const deltaColor =
+		hasDelta && delta >= 0 ? StatusColors.success : StatusColors.danger;
 	return (
 		<View style={styles.rankPill}>
 			<View
@@ -84,14 +100,17 @@ function RankPill({
 			<ThemedText type="xsmall" style={{ color: Colors.dark.text }}>
 				{rank.tierShortName} · {rank.rankedRating} RR
 			</ThemedText>
-			{deltaArrow ? (
-				<ThemedText
-					type="xsmall"
-					style={{ color: hasDelta && delta >= 0 ? "#6ae2af" : "#e2616a" }}
-				>
-					{deltaArrow}
-					{hasDelta && delta !== undefined ? Math.abs(delta) : ""}
-				</ThemedText>
+			{hasDelta ? (
+				<View style={styles.rankDelta}>
+					<Ionicons
+						name={delta >= 0 ? "arrow-up" : "arrow-down"}
+						size={10}
+						color={deltaColor}
+					/>
+					<ThemedText type="xsmall" style={{ color: deltaColor }}>
+						{Math.abs(delta)}
+					</ThemedText>
+				</View>
 			) : null}
 		</View>
 	);
@@ -132,7 +151,18 @@ const styles = StyleSheet.create({
 		flex: 1,
 		gap: Spacing.half,
 	},
+	identityRow: {
+		flex: 1,
+		flexDirection: "row",
+		alignItems: "center",
+		gap: Spacing.half,
+	},
 	rankPill: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: Spacing.half,
+	},
+	rankDelta: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: Spacing.half,

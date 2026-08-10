@@ -1,5 +1,5 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
+ * Below are the colors that are used in the app. The app is dark-only.
  * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
  */
 
@@ -8,17 +8,6 @@ import "@/commons/styles/global.css";
 import { Platform } from "react-native";
 
 export const Colors = {
-	light: {
-		text: "#000000",
-		textSecondary: "#60646C",
-		primary: "#E6112E",
-		primaryForeground: "#ffffff",
-		accent: "#5A9FE2",
-		accentForeground: "#ffffff",
-		background: "#ffffff",
-		backgroundElement: "#F0F0F3",
-		backgroundSelected: "#E0E1E6",
-	},
 	dark: {
 		text: "#ffffff",
 		primary: "#E6112E",
@@ -40,9 +29,14 @@ export const RarityColors = {
 	ultra: "#FAD663",
 } as const;
 
+export const StatusColors = {
+	success: "#6AE2AF",
+	danger: "#E2616A",
+} as const;
+
 export const OwnedAccent = "#7C8B9C";
 
-export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
+export type ThemeColor = keyof typeof Colors.dark;
 
 export const Fonts = Platform.select({
 	ios: {
@@ -79,5 +73,11 @@ export const Spacing = {
 	six: 64,
 } as const;
 
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
+export const Radius = {
+	/** Cards, rows, buttons, inputs, thumbnails */
+	small: 8,
+	/** Sheets, modals, large containers */
+	large: 16,
+} as const;
+
 export const MaxContentWidth = 800;

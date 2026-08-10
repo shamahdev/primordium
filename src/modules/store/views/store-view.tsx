@@ -13,6 +13,7 @@ import {
 import { ErrorBanner } from "@/commons/components/error-banner";
 import { PrimaryButton } from "@/commons/components/primary-button";
 import { ResetTimerLabel } from "@/commons/components/reset-timer-label";
+import { SectionHeader } from "@/commons/components/section-header";
 import { ThemedText } from "@/commons/components/themed-text";
 import { ThemedView } from "@/commons/components/themed-view";
 import { MaxContentWidth, Spacing } from "@/commons/constants/theme";
@@ -23,12 +24,12 @@ import {
 	getStoreBundleCardWidth,
 	StoreBundleCard,
 } from "@/modules/store/components/store-bundle-card";
+import { StoreGrid } from "@/modules/store/components/store-grid";
 import { StoreSectionSheet } from "@/modules/store/components/store-section-sheet";
 import type {
 	StoreCarouselCard,
 	StoreSnapshot,
 } from "@/modules/store/store-type";
-import { StoreGrid } from "@/modules/store/components/store-grid";
 
 type StoreViewProps = {
 	account: Account;
@@ -73,6 +74,11 @@ export function StoreView({
 			<StoreBundleCard card={item} onPress={handleBundleCardPress} />
 		</View>
 	);
+
+	const hasStoreContent =
+		carouselCards.length > 0 ||
+		(snapshot?.dailyOffers.length ?? 0) > 0 ||
+		(snapshot?.accessoryOffers.length ?? 0) > 0;
 
 	if (!snapshot && refreshing) {
 		return (
@@ -158,7 +164,7 @@ export function StoreView({
 									keyExtractor={(item) => item.id}
 									contentContainerStyle={styles.carouselContent}
 									snapToInterval={
-										getStoreBundleCardWidth(windowWidth) + Spacing.two
+										getStoreBundleCardWidth(windowWidth) + Spacing.one
 									}
 									decelerationRate="fast"
 									renderItem={renderBundleCardItem}
@@ -179,9 +185,9 @@ export function StoreView({
 					{/* Daily Store */}
 					{snapshot.dailyOffers.length > 0 && (
 						<View style={styles.section}>
-							<SectionLabel
+							<SectionHeader
 								title="Daily Store"
-								expiresAt={snapshot.dailyResetAt}
+								trailing={<ResetTimerLabel expiresAt={snapshot.dailyResetAt} />}
 							/>
 							<StoreGrid
 								items={snapshot.dailyOffers}
@@ -193,14 +199,29 @@ export function StoreView({
 					{/* Accessories */}
 					{snapshot.accessoryOffers.length > 0 && (
 						<View style={styles.section}>
-							<SectionLabel
+							<SectionHeader
 								title="Accessories"
-								expiresAt={snapshot.accessoryResetAt}
+								trailing={
+									<ResetTimerLabel expiresAt={snapshot.accessoryResetAt} />
+								}
 							/>
 							<StoreGrid
 								items={snapshot.accessoryOffers}
 								favoriteMatchesById={favoriteMatchesById}
 							/>
+						</View>
+					)}
+
+					{!hasStoreContent && (
+						<View style={styles.emptyState}>
+							<ThemedText type="smallBold">Store is empty right now</ThemedText>
+							<ThemedText
+								type="small"
+								themeColor="textSecondary"
+								style={styles.emptyStateHint}
+							>
+								Pull down to check again.
+							</ThemedText>
 						</View>
 					)}
 				</ScrollView>
@@ -212,23 +233,6 @@ export function StoreView({
 				onBeforeNavigate={handleSheetBeforeNavigate}
 			/>
 		</>
-	);
-}
-
-function SectionLabel({
-	title,
-	expiresAt,
-}: {
-	title: string;
-	expiresAt?: string;
-}) {
-	return (
-		<View style={styles.sectionLabel}>
-			<ThemedText type="default" style={styles.sectionTitle}>
-				{title}
-			</ThemedText>
-			{expiresAt ? <ResetTimerLabel expiresAt={expiresAt} /> : null}
-		</View>
 	);
 }
 
@@ -258,21 +262,15 @@ const styles = StyleSheet.create({
 		gap: Spacing.two,
 		paddingTop: Spacing.two,
 	},
-	sectionLabel: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-		paddingBottom: Spacing.two,
-		borderBottomWidth: 1,
-		borderBottomColor: "rgba(128,128,128,0.3)",
-	},
-	sectionTitle: {
-		fontWeight: "700",
-	},
-	chipRow: {
-		gap: Spacing.two,
-	},
 	carouselContent: {
 		paddingHorizontal: 0,
+	},
+	emptyState: {
+		paddingVertical: Spacing.six,
+		alignItems: "center",
+		gap: Spacing.one,
+	},
+	emptyStateHint: {
+		textAlign: "center",
 	},
 });

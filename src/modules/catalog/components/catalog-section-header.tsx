@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet } from "react-native";
 
-import { ThemedText } from "@/commons/components/themed-text";
+import { SectionHeader } from "@/commons/components/section-header";
 import { Spacing } from "@/commons/constants/theme";
 
 export const CatalogSectionHeader = React.memo(function CatalogSectionHeader({
@@ -9,20 +9,11 @@ export const CatalogSectionHeader = React.memo(function CatalogSectionHeader({
 }: {
 	title: string;
 }) {
-	return (
-		<ThemedText
-			type="small"
-			themeColor="textSecondary"
-			style={styles.sectionHeader}
-		>
-			{title.toUpperCase()}
-		</ThemedText>
-	);
+	return <SectionHeader title={title} style={styles.sectionHeader} />;
 });
 
 const styles = StyleSheet.create({
 	sectionHeader: {
-		letterSpacing: 1.4,
 		paddingTop: Spacing.three,
 		paddingBottom: Spacing.one,
 	},

@@ -1,9 +1,8 @@
 import { Image } from "expo-image";
-import React from "react";
-import { FlatList, Pressable, StyleSheet, View } from "react-native";
+import { FlatList, StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/commons/components/themed-text";
-import { Spacing } from "@/commons/constants/theme";
+import { Radius, Spacing, StatusColors } from "@/commons/constants/theme";
 import { useTheme } from "@/commons/hooks/use-theme";
 import type { MatchCard } from "../companion-type";
 
@@ -50,16 +49,14 @@ function MatchCardView({ card }: { card: MatchCard }) {
 	const theme = useTheme();
 	const winLabel = card.won === null ? "—" : card.won ? "WIN" : "LOSS";
 	const winColor =
-		card.won === null ? theme.textSecondary : card.won ? "#6ae2af" : "#e2616a";
+		card.won === null
+			? theme.textSecondary
+			: card.won
+				? StatusColors.success
+				: StatusColors.danger;
 
 	return (
-		<Pressable
-			style={({ pressed }) => [
-				styles.card,
-				{ backgroundColor: theme.backgroundElement },
-				pressed && styles.pressed,
-			]}
-		>
+		<View style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
 			{card.mapSplash ? (
 				<Image
 					source={card.mapSplash}
@@ -106,7 +103,10 @@ function MatchCardView({ card }: { card: MatchCard }) {
 						<ThemedText
 							type="xsmall"
 							style={{
-								color: card.rankedRatingEarned >= 0 ? "#6ae2af" : "#e2616a",
+								color:
+									card.rankedRatingEarned >= 0
+										? StatusColors.success
+										: StatusColors.danger,
 							}}
 						>
 							{card.rankedRatingEarned >= 0 ? "+" : ""}
@@ -115,7 +115,7 @@ function MatchCardView({ card }: { card: MatchCard }) {
 					) : null}
 				</View>
 			</View>
-		</Pressable>
+		</View>
 	);
 }
 
@@ -130,11 +130,8 @@ const styles = StyleSheet.create({
 	},
 	card: {
 		width: 200,
-		borderRadius: Spacing.one,
+		borderRadius: Radius.small,
 		overflow: "hidden",
-	},
-	pressed: {
-		opacity: 0.75,
 	},
 	mapSplash: {
 		width: "100%",

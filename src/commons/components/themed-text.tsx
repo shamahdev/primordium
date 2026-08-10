@@ -36,7 +36,7 @@ export function ThemedText({
 				type === "smallBold" && styles.smallBold,
 				type === "subtitle" && styles.subtitle,
 				type === "link" && styles.link,
-				type === "linkPrimary" && styles.linkPrimary,
+				type === "linkPrimary" && [styles.linkPrimary, { color: theme.accent }],
 				type === "code" && styles.code,
 				style,
 			]}
@@ -69,11 +69,11 @@ const styles = StyleSheet.create({
 	title: {
 		fontSize: 24,
 		fontWeight: 600,
-		lineHeight: 52,
+		lineHeight: 30,
 	},
 	subtitle: {
 		fontSize: 18,
-		lineHeight: 44,
+		lineHeight: 24,
 		fontWeight: 600,
 	},
 	link: {
@@ -83,7 +83,6 @@ const styles = StyleSheet.create({
 	linkPrimary: {
 		lineHeight: 30,
 		fontSize: 14,
-		color: "#3c87f7",
 	},
 	code: {
 		fontFamily: Fonts.mono,

@@ -4,7 +4,7 @@ import type { ViewStyle } from "react-native";
 import { StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/commons/components/themed-text";
-import { Colors, Spacing } from "@/commons/constants/theme";
+import { Colors, Radius, Spacing } from "@/commons/constants/theme";
 import { useTheme } from "@/commons/hooks/use-theme";
 import {
 	getCatalogRarityColor,
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
 	card: {
 		width: "100%",
 		aspectRatio: 3 / 4,
-		borderRadius: Spacing.one,
+		borderRadius: Radius.small,
 		overflow: "hidden",
 		backgroundColor: Colors.dark.backgroundElement,
 	},
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
 		left: Spacing.one,
 		paddingHorizontal: Spacing.one + 2,
 		paddingVertical: 2,
-		borderRadius: Spacing.half,
+		borderRadius: Radius.small,
 		zIndex: 2,
 	},
 	discountText: {
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
 		backgroundColor: "rgba(0, 0, 0, 0.6)",
 		paddingHorizontal: Spacing.one + 2,
 		paddingVertical: 2,
-		borderRadius: Spacing.half,
+		borderRadius: Radius.small,
 		zIndex: 2,
 	},
 	accessoryBadgeWithFavorite: {

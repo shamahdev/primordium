@@ -1,5 +1,5 @@
-import { FlatList, StyleSheet, View } from "react-native";
-import { Spacing } from "@/commons/constants/theme";
+import { FlatList, StyleSheet, useWindowDimensions, View } from "react-native";
+import { MaxContentWidth, Spacing } from "@/commons/constants/theme";
 import { StoreGridCardVisual } from "@/modules/store/components/store-grid-card-visual";
 import type { StoreItem } from "@/modules/store/store-type";
 
@@ -8,7 +8,16 @@ type StoreGridProps = {
 	favoriteMatchesById?: Record<string, boolean>;
 };
 
+/** Two columns on phones, up to three on wide/tablet content areas. */
+export function getStoreGridColumnCount(windowWidth: number) {
+	const contentWidth = Math.min(windowWidth, MaxContentWidth);
+	return Math.max(2, Math.floor(contentWidth / 240));
+}
+
 export function StoreGrid({ items, favoriteMatchesById }: StoreGridProps) {
+	const { width: windowWidth } = useWindowDimensions();
+	const columns = getStoreGridColumnCount(windowWidth);
+
 	const renderStoreItem = ({ item }: { item: StoreItem }) => {
 		const favoriteLookupId = item.favoriteTargetId ?? item.itemAssetId;
 
@@ -26,9 +35,10 @@ export function StoreGrid({ items, favoriteMatchesById }: StoreGridProps) {
 
 	return (
 		<FlatList
+			key={columns}
 			data={items}
 			keyExtractor={(item) => item.id}
-			numColumns={2}
+			numColumns={columns}
 			scrollEnabled={false}
 			contentContainerStyle={styles.gridList}
 			columnWrapperStyle={styles.gridRow}
@@ -42,9 +52,9 @@ const styles = StyleSheet.create({
 		gap: Spacing.two,
 	},
 	gridRow: {
-		justifyContent: "space-between",
+		gap: Spacing.two,
 	},
 	gridItem: {
-		width: "49%",
+		flex: 1,
 	},
 });

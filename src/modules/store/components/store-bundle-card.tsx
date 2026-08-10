@@ -1,7 +1,7 @@
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, View } from "react-native";
 import { ThemedText } from "@/commons/components/themed-text";
-import { Colors, Spacing } from "@/commons/constants/theme";
+import { Colors, Radius, Spacing } from "@/commons/constants/theme";
 import { getCatalogStoreCurrencyIcon } from "@/modules/catalog/catalog-presentation";
 import type { StoreCarouselCard } from "@/modules/store/store-type";
 
@@ -19,6 +19,12 @@ export function StoreBundleCard({ card, onPress }: StoreBundleCardProps) {
 		<Pressable
 			onPress={() => onPress(card)}
 			style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+			accessibilityRole="button"
+			accessibilityLabel={
+				card.price
+					? `${card.title}, ${card.price.amount.toLocaleString()}`
+					: card.title
+			}
 		>
 			<View style={styles.bundleCard}>
 				{card.imageUrl ? (
@@ -71,7 +77,7 @@ export function StoreBundleCard({ card, onPress }: StoreBundleCardProps) {
 const styles = StyleSheet.create({
 	bundleCard: {
 		height: 120,
-		borderRadius: Spacing.one,
+		borderRadius: Radius.small,
 		overflow: "hidden",
 		backgroundColor: Colors.dark.backgroundElement,
 	},
